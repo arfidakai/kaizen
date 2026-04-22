@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next"
 import "./globals.css"
 import { ThemeProvider } from "@/context/ThemeContext"
+import { NotificationProvider } from "@/context/NotificationContext"
+import NotificationContainer from "@/components/NotificationContainer"
 
 export const metadata: Metadata = {
   title: "1% Daily",
@@ -28,9 +30,12 @@ export default function RootLayout({
     <html lang="id" suppressHydrationWarning>
       <body suppressHydrationWarning>
         <div className="app-container">
-          <ThemeProvider>
-            {children}
-          </ThemeProvider>
+          <NotificationProvider>
+            <ThemeProvider>
+              {children}
+            </ThemeProvider>
+            <NotificationContainer />
+          </NotificationProvider>
         </div>
       </body>
     </html>
