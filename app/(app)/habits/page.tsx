@@ -6,6 +6,10 @@ import { todayISO, calcStreak } from "@/lib/utils"
 import { format, subDays } from "date-fns"
 import HabitCard from "@/components/HabitCard"
 import ContributionGraph from "@/components/ContributionGraph"
+import HabitReminderModal from "@/components/HabitReminderModal"
+import ReminderSettingsModal from "@/components/ReminderSettingsModal"
+import { useNotification } from "@/context/NotificationContext"
+import { useHabitReminders } from "@/lib/useHabitReminders"
 import { Plus, Loader2, X } from "lucide-react"
 
 const HABIT_ICONS = ["✅","🏃","📚","💪","🧘","🥗","💧","😴","🎯","✍️","🎵","🌿","🧠","🏋️","🚴","🧹","💊","🙏","🎨","📱"]
@@ -17,11 +21,15 @@ interface Habit {
   completedToday: boolean
   streak: number
   allCompletedDates: string[]
+  reminderTime?: string | null
+  reminderEnabled?: boolean
 }
 
 export default function HabitsPage() {
   const supabase = createClient()
   const today = todayISO()
+  const { addNotification } = useNotification()
+  useHabitReminders() // Start reminder checking
 
   const [userId, setUserId] = useState("")
   const [habits, setHabits] = useState<Habit[]>([])
@@ -31,6 +39,10 @@ export default function HabitsPage() {
   const [newIcon, setNewIcon] = useState("✅")
   const [adding, setAdding] = useState(false)
   const [allCompletedDates, setAllCompletedDates] = useState<string[]>([])
+  const [reminderHabit, setReminderHabit] = useState<Habit | null>(null)
+  const [showReminder, setShowReminder] = useState(false)
+  const [settingsHabit, setSettingsHabit] = useState<Habit | null>(null)
+  const [showReminderSettings, setShowReminderSettings] = useState(false)
 
   const fetchHabits = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser()
@@ -38,7 +50,7 @@ export default function HabitsPage() {
     setUserId(user.id)
 
     const [habitsRes, logsRes] = await Promise.all([
-      supabase.from("habits").select("id, name, icon").eq("user_id", user.id).order("created_at"),
+      supabase.from("habits").select("id, name, icon, reminder_time, reminder_enabled").eq("user_id", user.id).order("created_at"),
       supabase.from("habit_logs")
         .select("habit_id, date, completed")
         .eq("user_id", user.id)
@@ -67,6 +79,8 @@ export default function HabitsPage() {
         completedToday: todayLogs.has(h.id),
         streak: calcStreak(hLogs),
         allCompletedDates: hLogs,
+        reminderTime: h.reminder_time,
+        reminderEnabled: h.reminder_enabled,
       }
     })
     setHabits(mapped)
@@ -82,9 +96,68 @@ export default function HabitsPage() {
       await supabase.from("habit_logs").upsert({
         habit_id: habit.id, user_id: userId, date: today, completed: true,
       }, { onConflict: "habit_id,date" })
+      addNotification(`✓ ${habit.name} selesai!`, "success", 2000)
     } else {
       await supabase.from("habit_logs").delete().eq("habit_id", habit.id).eq("date", today)
+      addNotification(`${habit.name} dibatalkan`, "info", 2000)
     }
+  }
+
+  function showHabitReminder(habit: Habit) {
+    setReminderHabit(habit)
+    setShowReminder(true)
+  }
+
+  function openReminderSettings(habit: Habit) {
+    setSettingsHabit(habit)
+    setShowReminderSettings(true)
+  }
+
+  async function completeFromReminder() {
+    if (!reminderHabit) return
+    await toggleHabit(reminderHabit)
+    setShowReminder(false)
+    setReminderHabit(null)
+  }
+
+  async function saveReminderTime(time: string) {
+    if (!settingsHabit || !userId) return
+    
+    await supabase
+      .from("habits")
+      .update({ reminder_time: time, reminder_enabled: true })
+      .eq("id", settingsHabit.id)
+      .eq("user_id", userId)
+
+    setHabits(prev => prev.map(h => 
+      h.id === settingsHabit.id 
+        ? { ...h, reminderTime: time, reminderEnabled: true }
+        : h
+    ))
+
+    addNotification(`Reminder set untuk ${settingsHabit.name} at ${time}`, "success", 2000)
+    setShowReminderSettings(false)
+    setSettingsHabit(null)
+  }
+
+  async function deleteReminderTime() {
+    if (!settingsHabit || !userId) return
+    
+    await supabase
+      .from("habits")
+      .update({ reminder_time: null, reminder_enabled: false })
+      .eq("id", settingsHabit.id)
+      .eq("user_id", userId)
+
+    setHabits(prev => prev.map(h => 
+      h.id === settingsHabit.id 
+        ? { ...h, reminderTime: null, reminderEnabled: false }
+        : h
+    ))
+
+    addNotification(`Reminder dihapus untuk ${settingsHabit.name}`, "info", 2000)
+    setShowReminderSettings(false)
+    setSettingsHabit(null)
   }
 
   async function addHabit() {
@@ -153,12 +226,14 @@ export default function HabitsPage() {
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
             {habits.map(habit => (
-              <HabitCard
-                key={habit.id}
-                {...habit}
-                onToggle={() => toggleHabit(habit)}
-                onDelete={() => deleteHabit(habit.id)}
-              />
+              <div key={habit.id}>
+                <HabitCard
+                  {...habit}
+                  onToggle={() => toggleHabit(habit)}
+                  onDelete={() => deleteHabit(habit.id)}
+                  onReminderClick={() => openReminderSettings(habit)}
+                />
+              </div>
             ))}
           </div>
         )}
@@ -240,6 +315,35 @@ export default function HabitsPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Habit Reminder Modal */}
+      {reminderHabit && (
+        <HabitReminderModal
+          isOpen={showReminder}
+          habitName={reminderHabit.name}
+          habitIcon={reminderHabit.icon}
+          onComplete={completeFromReminder}
+          onDismiss={() => {
+            setShowReminder(false)
+            setReminderHabit(null)
+          }}
+        />
+      )}
+
+      {/* Reminder Settings Modal */}
+      {settingsHabit && (
+        <ReminderSettingsModal
+          isOpen={showReminderSettings}
+          habitName={settingsHabit.name}
+          currentTime={settingsHabit.reminderTime || null}
+          onSave={saveReminderTime}
+          onClose={() => {
+            setShowReminderSettings(false)
+            setSettingsHabit(null)
+          }}
+          onDelete={deleteReminderTime}
+        />
       )}
     </div>
   )
