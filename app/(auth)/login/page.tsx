@@ -6,6 +6,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase"
+import { KaizenIcon } from "@/components/KaizenLogo"
 import { Eye, EyeOff, Loader2 } from "lucide-react"
 
 export default function LoginPage() {
@@ -42,15 +43,12 @@ export default function LoginPage() {
     <div className="w-full animate-fade-in" style={{ maxWidth: 360 }}>
       {/* Logo */}
       <div className="text-center mb-10">
-        <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl mb-4 glow-accent"
-          style={{ background: "linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%)" }}>
-          <span className="text-2xl font-bold" style={{ color: "#0f0f0f", fontFamily: "'Space Mono', monospace" }}>1%</span>
-        </div>
-        <h1 className="text-2xl font-bold text-gradient" style={{ fontFamily: "'Space Mono', monospace" }}>
-          1% Daily
+        <KaizenIcon size={56} />
+        <h1 className="text-2xl font-bold" style={{ marginTop: "1rem", fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+          kaizen
         </h1>
-        <p style={{ color: "#888", fontSize: "0.85rem", marginTop: "0.25rem" }}>
-          Tumbuh 1% setiap hari
+        <p style={{ color: "#888", fontSize: "0.85rem", marginTop: "0.25rem", fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+          1% Better Every Day
         </p>
       </div>
 

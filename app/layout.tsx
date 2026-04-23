@@ -5,8 +5,13 @@ import { NotificationProvider } from "@/context/NotificationContext"
 import NotificationContainer from "@/components/NotificationContainer"
 
 export const metadata: Metadata = {
-  title: "1% Daily",
+  title: "1% Daily - Kaizen",
   description: "Tumbuh 1% setiap hari. Self-development tracker harian.",
+  icons: {
+    icon: "/favicon.svg",
+    shortcut: "/favicon.svg",
+    apple: "/favicon.svg",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
