@@ -13,6 +13,13 @@ export async function subscribeToPush() {
     return false
   }
 
+  // Validate VAPID key
+  const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
+  if (!vapidKey) {
+    console.error("NEXT_PUBLIC_VAPID_PUBLIC_KEY tidak di-set")
+    return false
+  }
+
   try {
     // Check notification permission
     if (Notification.permission === "denied") {
@@ -37,9 +44,7 @@ export async function subscribeToPush() {
     // Subscribe to push
     const subscription = await registration.pushManager.subscribe({
       userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(
-        process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || ""
-      ),
+      applicationServerKey: urlBase64ToUint8Array(vapidKey),
     })
 
     // Kirim subscription ke backend
@@ -50,7 +55,8 @@ export async function subscribeToPush() {
     })
 
     if (!response.ok) {
-      throw new Error("Failed to subscribe on backend")
+      const errorData = await response.json().catch(() => ({}))
+      throw new Error(`Backend error: ${response.status} - ${errorData.error || response.statusText}`)
     }
 
     return true
