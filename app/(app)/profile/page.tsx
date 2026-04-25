@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase"
 import { useRouter } from "next/navigation"
 import { formatDate } from "@/lib/utils"
 import ThemePicker from "@/components/ThemePicker"
+import PushNotificationToggle from "@/components/PushNotificationToggle"
 import {
   Loader2, LogOut, Edit3, Bell, ChevronRight, CheckCircle2, Flame, Calendar, X, Save
 } from "lucide-react"
@@ -172,13 +173,13 @@ export default function ProfilePage() {
           label="Edit Profil"
           onClick={() => setEditing(true)}
         />
-        <MenuButton
-          icon={<Bell size={18} color="#64b5f6" />}
-          label="Notifikasi"
-          onClick={() => {}}
-          disabled
-          badge="Segera"
-        />
+        <div className="card" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "1rem" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+            <Bell size={18} color="#64b5f6" />
+            <span style={{ fontSize: "0.9rem", fontWeight: 500 }}>Push Notifications</span>
+          </div>
+          <PushNotificationToggle />
+        </div>
         <MenuButton
           icon={<LogOut size={18} color="#ef4444" />}
           label="Keluar"
