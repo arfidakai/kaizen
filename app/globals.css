@@ -29,6 +29,7 @@
   --nav-bg: #0d0d17;
   --nav-border: #1a1a2a;
   --input-bg: #0d0d17;
+  --card-shadow: none;
 
   /* Legacy aliases (tailwind / globals compat) */
   --background: #0a0a12;
@@ -97,7 +98,8 @@ body {
   border: 1px solid var(--border-color);
   border-radius: 1rem;
   padding: 1rem;
-  transition: background-color 0.2s ease, border-color 0.2s ease;
+  box-shadow: var(--card-shadow);
+  transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 /* ─── Section title ──────────────────────────────────────── */

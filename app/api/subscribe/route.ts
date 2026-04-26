@@ -1,57 +1,40 @@
 import { createClient } from "@supabase/supabase-js"
+import { NextRequest } from "next/server"
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
     const subscription = await req.json()
-    const { endpoint, keys } = subscription
 
-    if (!endpoint || !keys) {
-      return Response.json({ error: "Invalid subscription" }, { status: 400 })
+    const authHeader = req.headers.get("Authorization")
+    const token = authHeader?.replace("Bearer ", "")
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token!)
+    if (authError || !user) {
+      return Response.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    // Get authenticated user from request
-    const authHeader = req.headers.get("authorization")
-    let userId: string | null = null
-
-    // Try to get user from auth header if available
-    if (authHeader?.startsWith("Bearer ")) {
-      const token = authHeader.substring(7)
-      const { data: { user }, error: authError } = await supabase.auth.getUser(token)
-      
-      if (user) {
-        userId = user.id
-      }
-    }
-
-    // If no auth header, still save subscription (for guest users)
-    // But ideally you'd require authentication
-
-    const { error } = await supabase.from("push_subscriptions").upsert(
-      {
-        endpoint,
-        p256dh: keys.p256dh,
-        auth: keys.auth,
-        user_id: userId,
-      },
-      { onConflict: "endpoint" }
-    )
+    const { error } = await supabase
+      .from("push_subscriptions")
+      .upsert({
+        user_id: user.id,
+        endpoint: subscription.endpoint,
+        p256dh: subscription.keys.p256dh,
+        auth: subscription.keys.auth,
+      }, {
+        onConflict: "endpoint"
+      })
 
     if (error) {
-      console.error("Supabase error:", error)
       return Response.json({ error: error.message }, { status: 500 })
     }
 
     return Response.json({ success: true })
-  } catch (error) {
-    console.error("Subscribe error:", error)
-    return Response.json(
-      { error: error instanceof Error ? error.message : "Unknown error" },
-      { status: 500 }
-    )
+  } catch (err) {
+    return Response.json({ error: "Server error" }, { status: 500 })
   }
 }

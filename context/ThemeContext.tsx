@@ -67,6 +67,7 @@ function applyThemeCssVars(merged: MergedTheme) {
   root.style.setProperty("--nav-bg", merged.navBg)
   root.style.setProperty("--nav-border", merged.navBorder)
   root.style.setProperty("--input-bg", merged.inputBg)
+  root.style.setProperty("--card-shadow", merged.cardShadow)
 
   // Legacy aliases (for globals.css / tailwind compat)
   root.style.setProperty("--background", merged.bg)

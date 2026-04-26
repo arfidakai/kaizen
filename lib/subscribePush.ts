@@ -1,3 +1,5 @@
+import { createClient } from "@/lib/supabase"
+
 /**
  * Subscribe untuk push notifications
  * Harus dipanggil setelah user memberikan permission
@@ -47,10 +49,17 @@ export async function subscribeToPush() {
       applicationServerKey: urlBase64ToUint8Array(vapidKey),
     })
 
+    // Ambil session untuk Authorization header
+    const supabase = createClient()
+    const { data: { session } } = await supabase.auth.getSession()
+
     // Kirim subscription ke backend
     const response = await fetch("/api/subscribe", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${session?.access_token}`,
+      },
       body: JSON.stringify(subscription),
     })
 
