@@ -52,8 +52,8 @@ export default function MiniBarChart({ data }: MiniBarChartProps) {
                 key={i}
                 fill={
                   entry.rate >= 80 ? theme.accent :
-                  entry.rate >= 50 ? theme.accentBarMid :
-                  entry.rate > 0  ? theme.accentBarLow : "#2e2e2e"
+                  entry.rate >= 50 ? theme.accentMid :
+                  entry.rate > 0  ? theme.text : "var(--border-color)"
                 }
               />
             ))}

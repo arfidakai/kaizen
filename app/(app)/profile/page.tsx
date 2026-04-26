@@ -109,15 +109,21 @@ export default function ProfilePage() {
         }}>
           {profile?.avatar_url || "🧑"}
         </div>
-        <h1 style={{ fontSize: "1.3rem", fontWeight: 700 }}>
+        <h1 style={{ fontSize: "1.3rem", fontWeight: 700, color: "var(--text-primary)" }}>
           {profile?.username || profile?.email?.split("@")[0] || "User"}
         </h1>
-        <p style={{ color: "#888", fontSize: "0.8rem", fontFamily: "'Space Mono', monospace", marginTop: "0.2rem" }}>
+        <p style={{ color: "var(--text-secondary)", fontSize: "0.8rem", fontFamily: "'Space Mono', monospace", marginTop: "0.2rem" }}>
           {profile?.email}
         </p>
-        <p style={{ color: "#555", fontSize: "0.75rem", marginTop: "0.2rem" }}>
+        <p style={{ color: "var(--text-muted)", fontSize: "0.75rem", marginTop: "0.2rem" }}>
           Bergabung {profile?.created_at ? formatDate(profile.created_at, "MMMM yyyy") : "—"}
         </p>
+      </div>
+
+      {/* Theme Picker — at the top after header */}
+      <div>
+        <p className="section-title">TEMA WARNA</p>
+        <ThemePicker />
       </div>
 
       {/* Summary Stats */}
@@ -131,8 +137,8 @@ export default function ProfilePage() {
             display: "flex", flexDirection: "column", alignItems: "center", gap: "0.2rem", padding: "0.75rem 0.5rem",
           }}>
             {s.icon}
-            <span style={{ fontFamily: "'Space Mono', monospace", fontSize: "1.25rem", fontWeight: 700 }}>{s.value}</span>
-            <span style={{ fontSize: "0.65rem", color: "#666", fontFamily: "'Space Mono', monospace" }}>{s.label}</span>
+            <span style={{ fontFamily: "'Space Mono', monospace", fontSize: "1.25rem", fontWeight: 700, color: "var(--text-primary)" }}>{s.value}</span>
+            <span style={{ fontSize: "0.65rem", color: "var(--text-secondary)", fontFamily: "'Space Mono', monospace" }}>{s.label}</span>
           </div>
         ))}
       </div>
@@ -140,12 +146,12 @@ export default function ProfilePage() {
       {/* Progress bar: best streak */}
       <div className="card">
         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.5rem" }}>
-          <span style={{ fontSize: "0.8rem", color: "#ccc" }}>Best Streak</span>
+          <span style={{ fontSize: "0.8rem", color: "var(--text-secondary)" }}>Best Streak</span>
           <span style={{ fontFamily: "'Space Mono', monospace", fontSize: "0.8rem", color: "var(--accent)" }}>
             {stats.bestStreak} hari
           </span>
         </div>
-        <div style={{ height: 6, background: "#2e2e2e", borderRadius: 3, overflow: "hidden" }}>
+        <div style={{ height: 6, background: "var(--border-color)", borderRadius: 3, overflow: "hidden" }}>
           <div style={{
             height: "100%",
             width: `${Math.min(100, (stats.currentStreak / Math.max(stats.bestStreak, 1)) * 100)}%`,
@@ -153,15 +159,9 @@ export default function ProfilePage() {
             borderRadius: 3, transition: "width 1s ease",
           }} />
         </div>
-        <p style={{ fontSize: "0.7rem", color: "#555", marginTop: "0.35rem" }}>
+        <p style={{ fontSize: "0.7rem", color: "var(--text-muted)", marginTop: "0.35rem" }}>
           Streak sekarang: {stats.currentStreak} hari
         </p>
-      </div>
-
-      {/* Theme Picker */}
-      <div>
-        <p className="section-title">TEMA WARNA</p>
-        <ThemePicker />
       </div>
 
       {/* Menu */}
@@ -176,7 +176,7 @@ export default function ProfilePage() {
         <div className="card" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "1rem" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
             <Bell size={18} color="#64b5f6" />
-            <span style={{ fontSize: "0.9rem", fontWeight: 500 }}>Push Notifications</span>
+            <span style={{ fontSize: "0.9rem", fontWeight: 500, color: "var(--text-primary)" }}>Push Notifications</span>
           </div>
           <PushNotificationToggle />
         </div>
@@ -188,7 +188,7 @@ export default function ProfilePage() {
         />
       </div>
 
-      <p style={{ textAlign: "center", color: "#333", fontSize: "0.7rem", fontFamily: "'Space Mono', monospace", paddingTop: "0.5rem" }}>
+      <p style={{ textAlign: "center", color: "var(--text-muted)", fontSize: "0.7rem", fontFamily: "'Space Mono', monospace", paddingTop: "0.5rem" }}>
         1% Daily v1.0.0
       </p>
 
@@ -204,15 +204,16 @@ export default function ProfilePage() {
             onClick={e => e.stopPropagation()}
             style={{
               width: "100%", maxWidth: 390,
-              background: "#1c1c1c",
+              background: "var(--card)",
               borderTopLeftRadius: "1.5rem", borderTopRightRadius: "1.5rem",
               padding: "1.5rem",
-              border: "1px solid #2e2e2e",
+              border: "1px solid var(--border-color)",
+              transition: "background-color 0.2s ease",
             }}
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.25rem" }}>
-              <h2 style={{ fontWeight: 700, fontSize: "1.1rem" }}>Edit Profil</h2>
-              <button onClick={() => setEditing(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "#888" }}>
+              <h2 style={{ fontWeight: 700, fontSize: "1.1rem", color: "var(--text-primary)" }}>Edit Profil</h2>
+              <button onClick={() => setEditing(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-secondary)" }}>
                 <X size={20} />
               </button>
             </div>
@@ -228,7 +229,7 @@ export default function ProfilePage() {
                       style={{
                         width: 42, height: 42, fontSize: "1.4rem",
                         borderRadius: "0.5rem", border: "none", cursor: "pointer",
-                        background: editAvatar === av ? "var(--accent-soft)" : "#242424",
+                        background: editAvatar === av ? "var(--accent-soft)" : "var(--border-color)",
                         outline: editAvatar === av ? `2px solid var(--accent)` : "none",
                         transition: "all 0.15s",
                       }}
@@ -280,17 +281,17 @@ function MenuButton({ icon, label, onClick, danger = false, disabled = false, ba
       style={{
         display: "flex", alignItems: "center", gap: "0.75rem",
         padding: "0.875rem 1rem",
-        background: "#1c1c1c",
-        border: "1px solid #2e2e2e",
+        background: "var(--card)",
+        border: "1px solid var(--border-color)",
         borderRadius: "0.875rem",
         cursor: disabled ? "not-allowed" : "pointer",
         width: "100%",
-        transition: "all 0.2s",
+        transition: "all 0.2s ease",
         opacity: disabled ? 0.5 : 1,
         textAlign: "left",
       }}
       onMouseEnter={e => { if (!disabled) e.currentTarget.style.borderColor = danger ? "rgba(239,68,68,0.4)" : "var(--accent-border)" }}
-      onMouseLeave={e => { e.currentTarget.style.borderColor = "#2e2e2e" }}
+      onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border-color)" }}
     >
       <div style={{
         width: 36, height: 36, borderRadius: "0.6rem",
@@ -300,19 +301,19 @@ function MenuButton({ icon, label, onClick, danger = false, disabled = false, ba
       }}>
         {icon}
       </div>
-      <span style={{ flex: 1, fontWeight: 500, fontSize: "0.9rem", color: danger ? "#ef4444" : "#f5f5f5" }}>
+      <span style={{ flex: 1, fontWeight: 500, fontSize: "0.9rem", color: danger ? "#ef4444" : "var(--text-primary)" }}>
         {label}
       </span>
       {badge && (
         <span style={{
           fontSize: "0.6rem", fontFamily: "'Space Mono', monospace",
-          background: "#2e2e2e", color: "#888",
+          background: "var(--border-color)", color: "var(--text-secondary)",
           padding: "2px 8px", borderRadius: 100,
         }}>
           {badge}
         </span>
       )}
-      {!badge && <ChevronRight size={16} color="#444" />}
+      {!badge && <ChevronRight size={16} style={{ color: "var(--text-muted)" }} />}
     </button>
   )
 }

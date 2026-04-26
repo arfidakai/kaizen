@@ -1,62 +1,83 @@
 "use client"
 
-import { THEMES } from "@/lib/themes"
+import { themes, ThemeName } from "@/lib/themes"
 import { useTheme } from "@/context/ThemeContext"
-import { Check } from "lucide-react"
+
+const THEME_NAMES = Object.keys(themes) as ThemeName[]
 
 export default function ThemePicker() {
-  const { theme, setTheme } = useTheme()
+  const { theme, mode, themeName, setTheme, toggleMode } = useTheme()
 
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "0.5rem" }}>
-      {THEMES.map(t => {
-        const active = theme.id === t.id
-        return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "0.875rem" }}>
+
+      {/* A) Mode toggle */}
+      <div style={{ display: "flex", gap: "0.5rem" }}>
+        {(["dark", "light"] as const).map(m => (
           <button
-            key={t.id}
-            onClick={() => setTheme(t.id)}
+            key={m}
+            onClick={() => { if (mode !== m) toggleMode() }}
             style={{
-              padding: "0.75rem 0.5rem",
-              borderRadius: "0.875rem",
-              border: `2px solid ${active ? t.accent : "#2e2e2e"}`,
-              background: active ? t.accentDim : "#1c1c1c",
+              flex: 1,
+              padding: "0.6rem",
+              borderRadius: "0.75rem",
+              border: "none",
               cursor: "pointer",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              gap: "0.4rem",
-              transition: "all 0.2s",
-              position: "relative",
+              background: mode === m ? theme.accent : theme.card,
+              color: mode === m ? "#ffffff" : theme.textMuted,
+              fontSize: "0.85rem",
+              fontFamily: "'Space Mono', monospace",
+              fontWeight: 600,
+              transition: "all 0.2s ease",
             }}
           >
-            {active && (
-              <div style={{
-                position: "absolute", top: 6, right: 6,
-                width: 16, height: 16, borderRadius: "50%",
-                background: t.accent,
-                display: "flex", alignItems: "center", justifyContent: "center",
-              }}>
-                <Check size={9} color="#0f0f0f" strokeWidth={3.5} />
-              </div>
-            )}
-            <div style={{
-              width: 28, height: 28, borderRadius: "50%",
-              background: t.accent,
-              boxShadow: active ? `0 0 12px ${t.accentBorder}` : "none",
-              transition: "box-shadow 0.2s",
-            }} />
-            <span style={{
-              fontSize: "0.65rem",
-              fontFamily: "'Space Mono', monospace",
-              color: active ? t.accent : "#888",
-              letterSpacing: "0.04em",
-              lineHeight: 1,
-            }}>
-              {t.name}
-            </span>
+            {m === "dark" ? "🌙 Dark" : "☀️ Light"}
           </button>
-        )
-      })}
+        ))}
+      </div>
+
+      {/* B) Color circles */}
+      <div style={{ display: "flex", justifyContent: "space-around" }}>
+        {THEME_NAMES.map(name => {
+          const active = themeName === name
+          const t = themes[name]
+          return (
+            <div
+              key={name}
+              style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.35rem" }}
+            >
+              <button
+                onClick={() => setTheme(name)}
+                aria-label={name}
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: "50%",
+                  background: t.accent,
+                  border: active ? "3px solid #ffffff" : "3px solid transparent",
+                  outline: active ? `3px solid ${t.accent}` : "none",
+                  outlineOffset: 2,
+                  cursor: "pointer",
+                  transition: "all 0.2s ease",
+                  padding: 0,
+                }}
+              />
+              {active && (
+                <span style={{
+                  fontSize: "0.6rem",
+                  fontFamily: "'Space Mono', monospace",
+                  color: t.accent,
+                  letterSpacing: "0.04em",
+                  lineHeight: 1,
+                }}>
+                  {name}
+                </span>
+              )}
+            </div>
+          )
+        })}
+      </div>
+
     </div>
   )
 }
