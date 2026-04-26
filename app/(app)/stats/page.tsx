@@ -227,7 +227,7 @@ export default function StatsPage() {
                   if (active && payload?.length) {
                     return (
                       <div style={{
-                        background: "#242424", border: "1px solid #2e2e2e",
+                        background: "var(--card)", border: "1px solid var(--border-color)",
                         borderRadius: 8, padding: "6px 12px",
                         fontSize: 12, fontFamily: "'Space Mono', monospace",
                       }}>
@@ -262,8 +262,8 @@ export default function StatsPage() {
           {badges.map(badge => (
             <div key={badge.id} className="card" style={{
               opacity: badge.unlocked ? 1 : 0.4,
-              borderColor: badge.unlocked ? "var(--accent-border)" : "#2e2e2e",
-              background: badge.unlocked ? "var(--accent-dim)" : "#1c1c1c",
+              borderColor: badge.unlocked ? "var(--accent-border)" : "var(--border-color)",
+              background: badge.unlocked ? "var(--accent-dim)" : "var(--card)",
               transition: "all 0.2s",
             }}>
               <div style={{ marginBottom: "0.4rem" }}>{badge.icon}</div>
@@ -297,8 +297,8 @@ function BigStatCard({ icon, label, value, suffix, accent = false }: {
 }) {
   return (
     <div className="card" style={{
-      background: accent ? "var(--accent-dim)" : "#1c1c1c",
-      borderColor: accent ? "var(--accent-border)" : "#2e2e2e",
+      background: accent ? "var(--accent-dim)" : "var(--card)",
+      borderColor: accent ? "var(--accent-border)" : "var(--border-color)",
       display: "flex", flexDirection: "column", gap: "0.25rem",
     }}>
       <div style={{ display: "flex", alignItems: "center", gap: "0.35rem", marginBottom: "0.25rem" }}>

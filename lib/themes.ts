@@ -24,6 +24,7 @@ export const modeTokens: Record<Mode, {
   navBg: string
   navBorder: string
   inputBg: string
+  cardShadow: string
 }> = {
   dark: {
     bg: "#0a0a12",
@@ -35,17 +36,19 @@ export const modeTokens: Record<Mode, {
     navBg: "#0d0d17",
     navBorder: "#1a1a2a",
     inputBg: "#0d0d17",
+    cardShadow: "none",
   },
   light: {
-    bg: "#f5f5f7",
+    bg: "#f2f2f7",
     card: "#ffffff",
-    border: "#f0f0f0",
-    textPrimary: "#111111",
-    textSecondary: "#888888",
-    textMuted: "#cccccc",
+    border: "#e8e8ee",
+    textPrimary: "#0f0f0f",
+    textSecondary: "#6b6b6b",
+    textMuted: "#aaaaaa",
     navBg: "#ffffff",
-    navBorder: "#f0f0f0",
-    inputBg: "#f9f9f9",
+    navBorder: "#ececec",
+    inputBg: "#f7f7fa",
+    cardShadow: "0 1px 3px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.04)",
   },
 }
 
