@@ -1,63 +1,52 @@
-export interface ThemeConfig {
-  id: string
-  name: string
+export type ThemeName = "Aurora" | "Ember" | "Frost" | "Rose" | "Gold"
+export type Mode = "dark" | "light"
+
+export const themes: Record<ThemeName, {
   accent: string
-  accentHover: string
-  accentDim: string    // ~6% opacity — card backgrounds
-  accentSoft: string   // ~12% opacity — active states
-  accentBorder: string // ~25% opacity — borders
-  accentGlow: string   // full box-shadow string
-  accentBarMid: string // chart medium bar
-  accentBarLow: string // chart low bar
+  accentLight: string
+  accentMid: string
+  text: string
+}> = {
+  Aurora: { accent: "#9b7fe8", accentLight: "#ede9fb", accentMid: "#c4b2f5", text: "#5b3fc4" },
+  Ember:  { accent: "#f07040", accentLight: "#fdeee8", accentMid: "#f7b89e", text: "#c04010" },
+  Frost:  { accent: "#3b9edd", accentLight: "#e6f4fd", accentMid: "#93cef0", text: "#1b6fa8" },
+  Rose:   { accent: "#e8608a", accentLight: "#fdeef3", accentMid: "#f3a8c0", text: "#b83060" },
+  Gold:   { accent: "#e8a020", accentLight: "#fdf4e0", accentMid: "#f5cf80", text: "#a86010" },
 }
 
-export const THEMES: ThemeConfig[] = [
-  {
-    id: "forest", name: "Forest",
-    accent: "#64dc78", accentHover: "#4ab85c",
-    accentDim: "rgba(100,220,120,0.06)", accentSoft: "rgba(100,220,120,0.12)",
-    accentBorder: "rgba(100,220,120,0.25)", accentGlow: "0 0 24px rgba(100,220,120,0.18)",
-    accentBarMid: "#4ab85c", accentBarLow: "#2d6b38",
+export const modeTokens: Record<Mode, {
+  bg: string
+  card: string
+  border: string
+  textPrimary: string
+  textSecondary: string
+  textMuted: string
+  navBg: string
+  navBorder: string
+  inputBg: string
+}> = {
+  dark: {
+    bg: "#0a0a12",
+    card: "#13131f",
+    border: "#1e1e30",
+    textPrimary: "#ffffff",
+    textSecondary: "#888888",
+    textMuted: "#444444",
+    navBg: "#0d0d17",
+    navBorder: "#1a1a2a",
+    inputBg: "#0d0d17",
   },
-  {
-    id: "aurora", name: "Aurora",
-    accent: "#a78bfa", accentHover: "#7c5bb5",
-    accentDim: "rgba(167,139,250,0.06)", accentSoft: "rgba(167,139,250,0.12)",
-    accentBorder: "rgba(167,139,250,0.25)", accentGlow: "0 0 24px rgba(167,139,250,0.18)",
-    accentBarMid: "#7c5bb5", accentBarLow: "#4a2d8a",
+  light: {
+    bg: "#f5f5f7",
+    card: "#ffffff",
+    border: "#f0f0f0",
+    textPrimary: "#111111",
+    textSecondary: "#888888",
+    textMuted: "#cccccc",
+    navBg: "#ffffff",
+    navBorder: "#f0f0f0",
+    inputBg: "#f9f9f9",
   },
-  {
-    id: "ember", name: "Ember",
-    accent: "#fb923c", accentHover: "#ea7a1e",
-    accentDim: "rgba(251,146,60,0.06)", accentSoft: "rgba(251,146,60,0.12)",
-    accentBorder: "rgba(251,146,60,0.25)", accentGlow: "0 0 24px rgba(251,146,60,0.18)",
-    accentBarMid: "#c96a1a", accentBarLow: "#7c3d0e",
-  },
-  {
-    id: "frost", name: "Frost",
-    accent: "#38bdf8", accentHover: "#0ea5e9",
-    accentDim: "rgba(56,189,248,0.06)", accentSoft: "rgba(56,189,248,0.12)",
-    accentBorder: "rgba(56,189,248,0.25)", accentGlow: "0 0 24px rgba(56,189,248,0.18)",
-    accentBarMid: "#0ea5e9", accentBarLow: "#0369a1",
-  },
-  {
-    id: "rose", name: "Rose",
-    accent: "#f472b6", accentHover: "#ec4899",
-    accentDim: "rgba(244,114,182,0.06)", accentSoft: "rgba(244,114,182,0.12)",
-    accentBorder: "rgba(244,114,182,0.25)", accentGlow: "0 0 24px rgba(244,114,182,0.18)",
-    accentBarMid: "#ec4899", accentBarLow: "#9d174d",
-  },
-  {
-    id: "gold", name: "Gold",
-    accent: "#fbbf24", accentHover: "#f59e0b",
-    accentDim: "rgba(251,191,36,0.06)", accentSoft: "rgba(251,191,36,0.12)",
-    accentBorder: "rgba(251,191,36,0.25)", accentGlow: "0 0 24px rgba(251,191,36,0.18)",
-    accentBarMid: "#d97706", accentBarLow: "#92400e",
-  },
-]
-
-export const DEFAULT_THEME_ID = "forest"
-
-export function getThemeById(id: string): ThemeConfig {
-  return THEMES.find(t => t.id === id) ?? THEMES[0]
 }
+
+export type MergedTheme = typeof themes[ThemeName] & typeof modeTokens[Mode]

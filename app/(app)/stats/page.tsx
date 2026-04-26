@@ -244,8 +244,8 @@ export default function StatsPage() {
                   <Cell key={i}
                     fill={
                       d.rate >= 80 ? theme.accent :
-                      d.rate >= 50 ? theme.accentBarMid :
-                      d.rate > 0  ? theme.accentBarLow : "#2e2e2e"
+                      d.rate >= 50 ? theme.accentMid :
+                      d.rate > 0  ? theme.text : "var(--border-color)"
                     }
                   />
                 ))}

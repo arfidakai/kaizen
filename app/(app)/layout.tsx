@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation"
 import { createServerSupabaseClient } from "@/lib/supabase-server"
 import BottomNav from "@/components/BottomNav"
+import FeedbackButton from "@/components/FeedbackButton"
 import { KaizenIcon } from "@/components/KaizenLogo"
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -15,12 +16,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         position: "sticky",
         top: 0,
         zIndex: 10,
-        background: "#0f0f0f",
-        borderBottom: "1px solid #1c1c1c",
+        background: "var(--nav-bg)",
+        borderBottom: "1px solid var(--nav-border)",
         padding: "1rem",
         display: "flex",
         alignItems: "center",
         gap: "0.75rem",
+        transition: "background-color 0.2s ease, border-color 0.2s ease",
       }}>
         <KaizenIcon size={32} />
         <span style={{
@@ -36,6 +38,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         {children}
       </main>
       <BottomNav />
+      <FeedbackButton />
     </>
   )
 }

@@ -23,15 +23,16 @@ export default function BottomNav() {
       transform: "translateX(-50%)",
       width: "100%",
       maxWidth: 390,
-      background: "rgba(20,20,20,0.95)",
+      background: "var(--nav-bg)",
       backdropFilter: "blur(20px)",
       WebkitBackdropFilter: "blur(20px)",
-      borderTop: "1px solid #2e2e2e",
+      borderTop: "1px solid var(--nav-border)",
       display: "flex",
       alignItems: "center",
       justifyContent: "space-around",
       padding: "0.5rem 0 calc(0.5rem + env(safe-area-inset-bottom, 0px))",
       zIndex: 50,
+      transition: "background-color 0.2s ease, border-color 0.2s ease",
     }}>
       {navItems.map(({ href, icon: Icon, label }) => {
         const active = pathname === href || pathname.startsWith(href + "/")
@@ -71,14 +72,14 @@ export default function BottomNav() {
                 style={{
                   position: "relative",
                   transition: "all 0.2s",
-                  color: active ? "var(--accent)" : "#555",
+                  color: active ? "var(--accent)" : "var(--text-secondary)",
                 }}
               />
             </div>
             <span style={{
               fontSize: "0.6rem",
               fontFamily: "'Space Mono', monospace",
-              color: active ? "var(--accent)" : "#555",
+              color: active ? "var(--accent)" : "var(--text-secondary)",
               fontWeight: active ? 700 : 400,
               letterSpacing: "0.05em",
               transition: "color 0.2s",

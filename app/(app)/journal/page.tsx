@@ -105,10 +105,10 @@ export default function JournalPage() {
           <div style={{ display: "flex", gap: "0.4rem", alignItems: "center", marginBottom: "0.35rem" }}>
             <Sparkles size={13} style={{ color: "var(--accent)" }} />
             <span style={{ fontSize: "0.7rem", color: "var(--accent)", fontFamily: "'Space Mono', monospace", letterSpacing: "0.08em" }}>
-              PROMPT HARI INI
+              REFLEKSI HARI INI
             </span>
           </div>
-          <p style={{ color: "#ccc", fontSize: "0.85rem", lineHeight: 1.5, margin: 0 }}>{prompt}</p>
+          <p style={{ color: "var(--text-secondary)", fontSize: "0.85rem", lineHeight: 1.5, margin: 0 }}>{prompt}</p>
         </div>
 
         <div>
