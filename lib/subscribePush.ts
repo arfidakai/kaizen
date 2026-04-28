@@ -103,11 +103,13 @@ export async function isSubscribed() {
   }
 
   try {
-    const registration = await navigator.serviceWorker.ready
-    const subscription = await registration.pushManager.getSubscription()
+    
+    const registrations = await navigator.serviceWorker.getRegistrations()
+    if (!registrations.length) return false
+
+    const subscription = await registrations[0].pushManager.getSubscription()
     return subscription !== null
-  } catch (error) {
-    console.error("Check subscription error:", error)
+  } catch {
     return false
   }
 }
@@ -121,16 +123,14 @@ export async function unsubscribeFromPush() {
   }
 
   try {
-    const registration = await navigator.serviceWorker.ready
-    const subscription = await registration.pushManager.getSubscription()
+    const registrations = await navigator.serviceWorker.getRegistrations()
+    if (!registrations.length) return true
 
-    if (subscription) {
-      await subscription.unsubscribe()
-    }
+    const subscription = await registrations[0].pushManager.getSubscription()
+    if (subscription) await subscription.unsubscribe()
 
     return true
-  } catch (error) {
-    console.error("Unsubscribe error:", error)
+  } catch {
     return false
   }
 }
