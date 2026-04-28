@@ -39,9 +39,9 @@ export async function subscribeToPush() {
     }
 
     // Register service worker
-    const registration = await navigator.serviceWorker.register("/sw.js", {
-      scope: "/",
-    })
+    await navigator.serviceWorker.register("/sw.js", { scope: "/" })
+
+    const registration = await navigator.serviceWorker.ready
 
     // Subscribe to push
     const subscription = await registration.pushManager.subscribe({
