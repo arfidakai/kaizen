@@ -189,7 +189,7 @@ export default function ProfilePage() {
       </div>
 
       <p style={{ textAlign: "center", color: "var(--text-muted)", fontSize: "0.7rem", fontFamily: "'Space Mono', monospace", paddingTop: "0.5rem" }}>
-        1% Daily v1.0.0
+        1% Daily v1.0.1
       </p>
 
       {/* Edit Modal */}
