@@ -51,24 +51,36 @@ export function useHabitReminders() {
       const remindTime = `${String(remindHour).padStart(2, "0")}:${String(remindMin).padStart(2, "0")}`
 
       if (currentTime === remindTime && !completedIds.has(habit.id)) {
-        // Check if reminder was already sent today
-        const { data: existingReminder } = await supabase
+        // Check if reminder was already sent today (reminder_sent_at IS NOT NULL)
+        const { data: alreadySent } = await supabase
           .from("habit_reminders")
           .select("id")
           .eq("habit_id", habit.id)
+          .eq("user_id", user.id)
           .eq("date", today)
-          .eq("reminder_sent_at", null)
-          .single()
+          .not("reminder_sent_at", "is", null)
+          .maybeSingle()
 
-        if (!existingReminder) {
-          // Send notification
+        if (!alreadySent) {
+          // In-app toast
           addNotification(
             `⏰ Reminder: ${habit.name} ${habit.icon}. Yuk dikerjain sekarang!`,
             "warning",
             5000
           )
 
-          // Log that reminder was sent
+          // Push notification ke device
+          fetch("/api/send-notification", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              title: "Kaizen Reminder 🔔",
+              body: `Jangan lupa: ${habit.name} ${habit.icon}`,
+              user_id: user.id,
+            }),
+          }).catch(() => null)
+
+          // Log bahwa reminder sudah dikirim
           await supabase.from("habit_reminders").upsert({
             habit_id: habit.id,
             user_id: user.id,

@@ -19,7 +19,7 @@ const supabase = createClient(
 
 export async function POST(req: Request) {
   try {
-    const { title, body } = await req.json()
+    const { title, body, user_id } = await req.json()
 
     if (!title || !body) {
       return Response.json(
@@ -28,10 +28,10 @@ export async function POST(req: Request) {
       )
     }
 
-    // Ambil semua subscription dari Supabase
-    const { data: subscriptions, error: fetchError } = await supabase
-      .from("push_subscriptions")
-      .select("*")
+    // Ambil subscription — filter per user jika user_id dikirim
+    let query = supabase.from("push_subscriptions").select("*")
+    if (user_id) query = query.eq("user_id", user_id)
+    const { data: subscriptions, error: fetchError } = await query
 
     if (fetchError) {
       console.error("Fetch subscriptions error:", fetchError)
