@@ -95,6 +95,7 @@ export default function ProfilePhotoUploader({
   }
 
   const displayUrl = preview || currentPhotoUrl
+  const hasPhoto = displayUrl && !uploading
 
   return (
     <div>
@@ -111,6 +112,7 @@ export default function ProfilePhotoUploader({
             marginBottom: "0.75rem",
             background: "var(--accent-soft)",
             border: "2px solid var(--accent-border)",
+            position: "relative",
           }}
         >
           <img
@@ -141,73 +143,106 @@ export default function ProfilePhotoUploader({
         </div>
       )}
 
-      {/* Upload Area */}
-      <button
-        onClick={() => fileInputRef.current?.click()}
-        onDragOver={handleDragOver}
-        onDrop={handleDrop}
-        disabled={uploading}
-        style={{
-          width: "100%",
-          padding: "1.5rem 1rem",
-          borderRadius: "0.875rem",
-          border: "2px dashed var(--accent-border)",
-          background: "var(--accent-dim)",
-          cursor: uploading ? "not-allowed" : "pointer",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          gap: "0.5rem",
-          transition: "all 0.2s",
-          opacity: uploading ? 0.6 : 1,
-        }}
-        onMouseEnter={(e) => {
-          if (!uploading) {
-            e.currentTarget.style.borderColor = "var(--accent)"
-            e.currentTarget.style.background = "var(--accent-soft)"
-          }
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.borderColor = "var(--accent-border)"
-          e.currentTarget.style.background = "var(--accent-dim)"
-        }}
-      >
-        {uploading ? (
-          <>
-            <Loader2 size={24} className="animate-spin" color="var(--accent)" />
-            <span
-              style={{
-                fontSize: "0.85rem",
-                color: "var(--text-secondary)",
-                fontWeight: 500,
-              }}
-            >
-              Mengupload...
-            </span>
-          </>
-        ) : (
-          <>
-            <Upload size={24} color="var(--accent)" />
-            <span
-              style={{
-                fontSize: "0.85rem",
-                color: "var(--text-primary)",
-                fontWeight: 500,
-              }}
-            >
-              Klik atau drag foto di sini
-            </span>
-            <span
-              style={{
-                fontSize: "0.7rem",
-                color: "var(--text-muted)",
-              }}
-            >
-              PNG, JPG, GIF (maks 5MB)
-            </span>
-          </>
-        )}
-      </button>
+      {/* Upload Area - Show only if no photo */}
+      {!hasPhoto && (
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          onDragOver={handleDragOver}
+          onDrop={handleDrop}
+          disabled={uploading}
+          style={{
+            width: "100%",
+            padding: "1.5rem 1rem",
+            borderRadius: "0.875rem",
+            border: "2px dashed var(--accent-border)",
+            background: "var(--accent-dim)",
+            cursor: uploading ? "not-allowed" : "pointer",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: "0.5rem",
+            transition: "all 0.2s",
+            opacity: uploading ? 0.6 : 1,
+          }}
+          onMouseEnter={(e) => {
+            if (!uploading) {
+              e.currentTarget.style.borderColor = "var(--accent)"
+              e.currentTarget.style.background = "var(--accent-soft)"
+            }
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.borderColor = "var(--accent-border)"
+            e.currentTarget.style.background = "var(--accent-dim)"
+          }}
+        >
+          {uploading ? (
+            <>
+              <Loader2 size={24} className="animate-spin" color="var(--accent)" />
+              <span
+                style={{
+                  fontSize: "0.85rem",
+                  color: "var(--text-secondary)",
+                  fontWeight: 500,
+                }}
+              >
+                Mengupload...
+              </span>
+            </>
+          ) : (
+            <>
+              <Upload size={24} color="var(--accent)" />
+              <span
+                style={{
+                  fontSize: "0.85rem",
+                  color: "var(--text-primary)",
+                  fontWeight: 500,
+                }}
+              >
+                Klik atau drag foto di sini
+              </span>
+              <span
+                style={{
+                  fontSize: "0.7rem",
+                  color: "var(--text-muted)",
+                }}
+              >
+                PNG, JPG, GIF (maks 5MB)
+              </span>
+            </>
+          )}
+        </button>
+      )}
+
+      {/* Change/Remove Button - Show only if photo exists */}
+      {hasPhoto && (
+        <div style={{ display: "flex", gap: "0.75rem" }}>
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploading}
+            style={{
+              flex: 1,
+              padding: "0.75rem 1rem",
+              borderRadius: "0.875rem",
+              border: "1px solid var(--accent-border)",
+              background: "var(--accent-soft)",
+              color: "var(--accent)",
+              cursor: uploading ? "not-allowed" : "pointer",
+              fontWeight: 500,
+              fontSize: "0.85rem",
+              transition: "all 0.2s",
+              opacity: uploading ? 0.6 : 1,
+            }}
+            onMouseEnter={(e) => {
+              if (!uploading) e.currentTarget.style.background = "var(--accent)"
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "var(--accent-soft)"
+            }}
+          >
+            Ganti Foto
+          </button>
+        </div>
+      )}
 
       <input
         ref={fileInputRef}

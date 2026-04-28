@@ -74,10 +74,15 @@ export default function ProfilePage() {
   async function handleSave() {
     if (!profile) return
     setSaving(true)
-    await supabase.from("users").update({
+    // Only update username and emoji avatar if no photo URL
+    const updateData: any = {
       username: editUsername.trim() || profile.username,
-      avatar_url: editAvatar,
-    }).eq("id", profile.id)
+    }
+    // Only update avatar_url if it's not a URL (i.e., it's an emoji)
+    if (!editAvatar.includes('http')) {
+      updateData.avatar_url = editAvatar
+    }
+    await supabase.from("users").update(updateData).eq("id", profile.id)
     setSaving(false)
     setEditing(false)
     setUploadError(null)
@@ -86,8 +91,14 @@ export default function ProfilePage() {
 
   async function handlePhotoUploadSuccess(url: string) {
     if (!profile) return
-    setProfile({ ...profile, avatar_url: url })
+    // Update local state
+    const updatedProfile = { ...profile, avatar_url: url }
+    setProfile(updatedProfile)
     setUploadError(null)
+    // Save to database
+    await supabase.from("users").update({
+      avatar_url: url,
+    }).eq("id", profile.id)
   }
 
   function handlePhotoUploadError(error: string) {
