@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation"
 import { formatDate } from "@/lib/utils"
 import ThemePicker from "@/components/ThemePicker"
 import PushNotificationToggle from "@/components/PushNotificationToggle"
+import ProfilePhotoUploader from "@/components/ProfilePhotoUploader"
 import {
   Loader2, LogOut, Edit3, Bell, ChevronRight, CheckCircle2, Flame, Calendar, X, Save
 } from "lucide-react"
@@ -38,6 +39,7 @@ export default function ProfilePage() {
   const [editUsername, setEditUsername] = useState("")
   const [editAvatar, setEditAvatar] = useState("")
   const [saving, setSaving] = useState(false)
+  const [uploadError, setUploadError] = useState<string | null>(null)
 
   const fetchProfile = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser()
@@ -78,7 +80,18 @@ export default function ProfilePage() {
     }).eq("id", profile.id)
     setSaving(false)
     setEditing(false)
+    setUploadError(null)
     await fetchProfile()
+  }
+
+  async function handlePhotoUploadSuccess(url: string) {
+    if (!profile) return
+    setProfile({ ...profile, avatar_url: url })
+    setUploadError(null)
+  }
+
+  function handlePhotoUploadError(error: string) {
+    setUploadError(error)
   }
 
   async function handleLogout() {
@@ -106,8 +119,21 @@ export default function ProfilePage() {
           border: "2px solid var(--accent-border)",
           display: "flex", alignItems: "center", justifyContent: "center",
           fontSize: "2.5rem", margin: "0 auto 0.75rem",
+          overflow: "hidden",
         }}>
-          {profile?.avatar_url || "🧑"}
+          {profile?.avatar_url && profile.avatar_url.includes('http') ? (
+            <img
+              src={profile.avatar_url}
+              alt={profile.username}
+              style={{
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+              }}
+            />
+          ) : (
+            profile?.avatar_url || "🧑"
+          )}
         </div>
         <h1 style={{ fontSize: "1.3rem", fontWeight: 700, color: "var(--text-primary)" }}>
           {profile?.username || profile?.email?.split("@")[0] || "User"}
@@ -219,8 +245,31 @@ export default function ProfilePage() {
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+              <ProfilePhotoUploader
+                currentPhotoUrl={profile?.avatar_url && profile.avatar_url.includes('http') ? profile.avatar_url : undefined}
+                onUploadSuccess={handlePhotoUploadSuccess}
+                onError={handlePhotoUploadError}
+              />
+
+              {uploadError && (
+                <div style={{
+                  padding: "0.75rem",
+                  background: "rgba(239,68,68,0.1)",
+                  border: "1px solid rgba(239,68,68,0.3)",
+                  borderRadius: "0.5rem",
+                  color: "#ef4444",
+                  fontSize: "0.85rem",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                }}>
+                  <X size={16} />
+                  {uploadError}
+                </div>
+              )}
+
               <div>
-                <label className="section-title">PILIH AVATAR</label>
+                <label className="section-title">PILIH AVATAR EMOJI (OPSIONAL)</label>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem" }}>
                   {AVATARS.map(av => (
                     <button
@@ -229,8 +278,8 @@ export default function ProfilePage() {
                       style={{
                         width: 42, height: 42, fontSize: "1.4rem",
                         borderRadius: "0.5rem", border: "none", cursor: "pointer",
-                        background: editAvatar === av ? "var(--accent-soft)" : "var(--border-color)",
-                        outline: editAvatar === av ? `2px solid var(--accent)` : "none",
+                        background: editAvatar === av && !editAvatar.includes('http') ? "var(--accent-soft)" : "var(--border-color)",
+                        outline: editAvatar === av && !editAvatar.includes('http') ? `2px solid var(--accent)` : "none",
                         transition: "all 0.15s",
                       }}
                     >
