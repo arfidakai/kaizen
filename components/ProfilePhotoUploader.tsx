@@ -49,6 +49,7 @@ export default function ProfilePhotoUploader({
       const response = await fetch("/api/upload-profile-photo", {
         method: "POST",
         body: formData,
+        credentials: 'same-origin',
       })
 
       if (!response.ok) {
@@ -57,11 +58,14 @@ export default function ProfilePhotoUploader({
       }
 
       const data = await response.json()
+      // Debug: log server response for troubleshooting
+      console.log("Profile upload response:", data)
       setPreview(null)
       onUploadSuccess?.(data.url)
     } catch (error) {
       const errorMsg =
         error instanceof Error ? error.message : "Upload gagal"
+      console.log("Profile upload error:", error)
       onError?.(errorMsg)
       setPreview(null)
     } finally {

@@ -96,9 +96,30 @@ export default function ProfilePage() {
     setProfile(updatedProfile)
     setUploadError(null)
     // Save to database
-    await supabase.from("users").update({
-      avatar_url: url,
-    }).eq("id", profile.id)
+    try {
+      const { data, error } = await supabase.from("users").update({
+        avatar_url: url,
+      }).eq("id", profile.id).select()
+      if (error) {
+        console.error("Profile update error:", error)
+        setUploadError(error.message || "Gagal memperbarui profil")
+      } else {
+        console.log("Profile update success:", data)
+        const serverRow = Array.isArray(data) && data[0] ? data[0] : null
+        if (serverRow) {
+          setProfile(prev => ({ ...(prev || {}), ...serverRow, email: profile.email }))
+        }
+        // Refresh from server to ensure UI matches DB/RLS
+        try {
+          await fetchProfile()
+        } catch (e) {
+          console.error('fetchProfile after update failed', e)
+        }
+      }
+    } catch (e) {
+      console.error("Profile update exception:", e)
+      setUploadError(String(e))
+    }
   }
 
   function handlePhotoUploadError(error: string) {
