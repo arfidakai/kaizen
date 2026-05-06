@@ -10,13 +10,15 @@ export const metadata: Metadata = {
   icons: {
     icon: "/favicon.svg",
     shortcut: "/favicon.svg",
-    apple: "/favicon.svg",
+    apple: "/icon-192.png",
   },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
     title: "1% Daily",
   },
+  manifest: "/manifest.json",
+  applicationName: "1% Daily",
 }
 
 export const viewport: Viewport = {
