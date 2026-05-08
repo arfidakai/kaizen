@@ -6,7 +6,7 @@ import { getGreeting, todayISO, formatDate, pct, getDailyPrompt } from "@/lib/ut
 import { format, subDays } from "date-fns"
 import { id } from "date-fns/locale"
 import MiniBarChart from "@/components/MiniBarChart"
-import { Flame, CheckCircle2, Target, BookOpen, Plus, Loader2, Sparkles } from "lucide-react"
+import { Flame, CheckCircle2, Target, BookOpen, Plus, Loader2, Sparkles, Snowflake } from "lucide-react"
 import Link from "next/link"
 
 interface Habit {
@@ -19,6 +19,8 @@ interface Habit {
 interface StreakData {
   current_streak: number
   best_streak: number
+  freeze_count: number
+  last_active: string | null
 }
 
 interface WeekData {
@@ -33,7 +35,8 @@ export default function DashboardPage() {
   const [user, setUser] = useState<{ id: string; email?: string } | null>(null)
   const [username, setUsername] = useState("")
   const [habits, setHabits] = useState<Habit[]>([])
-  const [streak, setStreak] = useState<StreakData>({ current_streak: 0, best_streak: 0 })
+  const [streak, setStreak] = useState<StreakData>({ current_streak: 0, best_streak: 0, freeze_count: 0, last_active: null })
+  const [streakAtRisk, setStreakAtRisk] = useState(false)
   const [weekData, setWeekData] = useState<WeekData[]>([])
   const [todayRate, setTodayRate] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -47,12 +50,19 @@ export default function DashboardPage() {
       supabase.from("users").select("username").eq("id", u.id).single(),
       supabase.from("habits").select("id, name, icon").eq("user_id", u.id),
       supabase.from("habit_logs").select("habit_id").eq("user_id", u.id).eq("date", today).eq("completed", true),
-      supabase.from("streaks").select("current_streak, best_streak").eq("user_id", u.id).single(),
+      supabase.from("streaks").select("current_streak, best_streak, freeze_count, last_active").eq("user_id", u.id).single(),
       supabase.from("habit_logs").select("habit_id, date, completed").eq("user_id", u.id).gte("date", format(subDays(new Date(), 6), "yyyy-MM-dd")).lte("date", today),
     ])
 
     if (profileRes.data) setUsername(profileRes.data.username || u.email?.split("@")[0] || "")
-    if (streakRes.data) setStreak(streakRes.data)
+    if (streakRes.data) {
+      const s = streakRes.data
+      setStreak({ ...s, freeze_count: s.freeze_count ?? 1 })
+      const twoDaysAgo = format(subDays(new Date(), 2), "yyyy-MM-dd")
+      if (s.last_active === twoDaysAgo && (s.freeze_count ?? 1) > 0 && s.current_streak > 0) {
+        setStreakAtRisk(true)
+      }
+    }
 
     const allHabits = habitsRes.data || []
     const completedIds = new Set((logsRes.data || []).map(l => l.habit_id))
@@ -77,6 +87,19 @@ export default function DashboardPage() {
     fetchAll()
   }, [fetchAll])
 
+  async function useFreeze() {
+    if (!user || !streakAtRisk || streak.freeze_count <= 0) return
+    const yesterday = format(subDays(new Date(), 1), "yyyy-MM-dd")
+    await supabase.from("streaks").update({
+      last_active: yesterday,
+      freeze_count: streak.freeze_count - 1,
+      freeze_used_at: today,
+      updated_at: new Date().toISOString(),
+    }).eq("user_id", user.id)
+    setStreak(prev => ({ ...prev, freeze_count: prev.freeze_count - 1, last_active: yesterday }))
+    setStreakAtRisk(false)
+  }
+
   async function toggleHabit(habit: Habit) {
     if (!user) return
     const optimistic = habits.map(h => h.id === habit.id ? { ...h, completed: !h.completed } : h)
@@ -94,16 +117,19 @@ export default function DashboardPage() {
 
     const completedCount = optimistic.filter(h => h.completed).length
     if (completedCount === optimistic.length && optimistic.length > 0) {
-      const { data: s } = await supabase.from("streaks").select("current_streak, best_streak, last_active").eq("user_id", user.id).single()
+      const { data: s } = await supabase.from("streaks").select("current_streak, best_streak, last_active, freeze_count").eq("user_id", user.id).single()
       if (s) {
         const yesterday = format(subDays(new Date(), 1), "yyyy-MM-dd")
-        const newCurrent = s.last_active === yesterday ? s.current_streak + 1 : 1
+        const newCurrent = s.last_active === yesterday || s.last_active === today ? s.current_streak + (s.last_active === today ? 0 : 1) : 1
         const newBest = Math.max(newCurrent, s.best_streak)
+        const earnedFreeze = newCurrent % 7 === 0 && newCurrent > 0
+        const newFreezeCount = earnedFreeze ? Math.min((s.freeze_count ?? 1) + 1, 3) : (s.freeze_count ?? 1)
         await supabase.from("streaks").update({
           current_streak: newCurrent, best_streak: newBest,
-          last_active: today, updated_at: new Date().toISOString(),
+          last_active: today, freeze_count: newFreezeCount,
+          updated_at: new Date().toISOString(),
         }).eq("user_id", user.id)
-        setStreak({ current_streak: newCurrent, best_streak: newBest })
+        setStreak(prev => ({ ...prev, current_streak: newCurrent, best_streak: newBest, freeze_count: newFreezeCount, last_active: today }))
       }
     }
   }
@@ -134,10 +160,29 @@ export default function DashboardPage() {
 
       {/* Score Cards */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.5rem" }}>
-        <StatCard icon={<Flame size={16} color="#ff7043" />} label="Streak" value={`${streak.current_streak}d`} />
+        <StatCard icon={<Flame size={16} color="#ff7043" />} label="Streak" value={`${streak.current_streak}d`} sub={streak.freeze_count > 0 ? `🧊 ×${streak.freeze_count}` : undefined} />
         <StatCard icon={<Target size={16} style={{ color: "var(--accent)" }} />} label="Hari ini" value={`${todayRate}%`} highlight />
         <StatCard icon={<CheckCircle2 size={16} color="#64b5f6" />} label="Best" value={`${streak.best_streak}d`} />
       </div>
+
+      {/* Streak at risk banner */}
+      {streakAtRisk && streak.freeze_count > 0 && (
+        <div className="card" style={{ borderColor: "#3b82f6", background: "rgba(59,130,246,0.08)", display: "flex", alignItems: "center", gap: "0.75rem" }}>
+          <div style={{ width: 44, height: 44, borderRadius: "50%", background: "rgba(59,130,246,0.15)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <Snowflake size={22} color="#60a5fa" />
+          </div>
+          <div style={{ flex: 1 }}>
+            <p style={{ fontWeight: 700, fontSize: "0.875rem", color: "#93c5fd" }}>Streak kamu hampir putus!</p>
+            <p style={{ fontSize: "0.72rem", color: "#666", marginTop: "0.1rem" }}>Pakai streak freeze untuk menjaga streak {streak.current_streak} hari-mu</p>
+          </div>
+          <button
+            onClick={useFreeze}
+            style={{ background: "#3b82f6", color: "#fff", border: "none", borderRadius: "0.6rem", padding: "0.5rem 0.875rem", fontSize: "0.78rem", fontWeight: 600, cursor: "pointer", flexShrink: 0 }}
+          >
+            Pakai 🧊
+          </button>
+        </div>
+      )}
 
       {/* Today's habits */}
       <div className="card">
@@ -235,11 +280,12 @@ export default function DashboardPage() {
   )
 }
 
-function StatCard({ icon, label, value, highlight = false }: {
+function StatCard({ icon, label, value, highlight = false, sub }: {
   icon: React.ReactNode
   label: string
   value: string
   highlight?: boolean
+  sub?: string
 }) {
   return (
     <div className={highlight ? "card glow-accent" : "card"} style={{
@@ -255,6 +301,11 @@ function StatCard({ icon, label, value, highlight = false }: {
       <span style={{ fontSize: "0.65rem", color: "#666", fontFamily: "'Space Mono', monospace", textTransform: "uppercase", letterSpacing: "0.05em" }}>
         {label}
       </span>
+      {sub && (
+        <span style={{ fontSize: "0.6rem", color: "#60a5fa", fontFamily: "'Space Mono', monospace" }}>
+          {sub}
+        </span>
+      )}
     </div>
   )
 }
