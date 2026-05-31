@@ -10,12 +10,13 @@ interface HabitCardProps {
   streak: number
   completedToday: boolean
   reminderTime?: string | null
+  goalTitle?: string | null
   onToggle: () => void
   onDelete: () => void
   onReminderClick?: () => void
 }
 
-export default function HabitCard({ name, icon, streak, completedToday, reminderTime, onToggle, onDelete, onReminderClick }: HabitCardProps) {
+export default function HabitCard({ name, icon, streak, completedToday, reminderTime, goalTitle, onToggle, onDelete, onReminderClick }: HabitCardProps) {
   const { mode } = useTheme()
   const isLight = mode === "light"
 
@@ -80,6 +81,14 @@ export default function HabitCard({ name, icon, streak, completedToday, reminder
           <span style={{ fontSize: "0.7rem", fontFamily: "'Space Mono', monospace", color: streakColor }}>
             {streak}d streak
           </span>
+          {goalTitle && (
+            <>
+              <span style={{ color: isLight ? "#d0d0d6" : "#444", margin: "0 0.25rem" }}>•</span>
+              <span style={{ fontSize: "0.68rem", fontFamily: "'Space Mono', monospace", color: "var(--accent)" }}>
+                {goalTitle}
+              </span>
+            </>
+          )}
           {reminderTime && (
             <>
               <span style={{ color: isLight ? "#d0d0d6" : "#444", margin: "0 0.25rem" }}>•</span>

@@ -23,6 +23,13 @@ interface Habit {
   allCompletedDates: string[]
   reminderTime?: string | null
   reminderEnabled?: boolean
+  goalId?: string | null
+  goalTitle?: string | null
+}
+
+interface GoalOption {
+  id: string
+  title: string
 }
 
 export default function HabitsPage() {
@@ -37,29 +44,35 @@ export default function HabitsPage() {
   const [showAdd, setShowAdd] = useState(false)
   const [newName, setNewName] = useState("")
   const [newIcon, setNewIcon] = useState("✅")
+  const [newGoalId, setNewGoalId] = useState("")
   const [adding, setAdding] = useState(false)
   const [allCompletedDates, setAllCompletedDates] = useState<string[]>([])
   const [reminderHabit, setReminderHabit] = useState<Habit | null>(null)
   const [showReminder, setShowReminder] = useState(false)
   const [settingsHabit, setSettingsHabit] = useState<Habit | null>(null)
   const [showReminderSettings, setShowReminderSettings] = useState(false)
+  const [goals, setGoals] = useState<GoalOption[]>([])
 
   const fetchHabits = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
     setUserId(user.id)
 
-    const [habitsRes, logsRes] = await Promise.all([
-      supabase.from("habits").select("id, name, icon, reminder_time, reminder_enabled").eq("user_id", user.id).order("created_at"),
+    const [habitsRes, logsRes, goalsRes] = await Promise.all([
+      supabase.from("habits").select("id, name, icon, reminder_time, reminder_enabled, goal_id").eq("user_id", user.id).order("created_at"),
       supabase.from("habit_logs")
         .select("habit_id, date, completed")
         .eq("user_id", user.id)
         .eq("completed", true)
         .gte("date", format(subDays(new Date(), 84), "yyyy-MM-dd")),
+      supabase.from("goals").select("id, title").eq("user_id", user.id).order("created_at", { ascending: false }),
     ])
 
     const allHabits = habitsRes.data || []
     const allLogs = logsRes.data || []
+    const allGoals = goalsRes.data || []
+    setGoals(allGoals)
+    const goalLookup = new Map(allGoals.map(goal => [goal.id, goal.title]))
     const todayLogs = new Set(allLogs.filter(l => l.date === today).map(l => l.habit_id))
     const totalHabits = allHabits.length
 
@@ -81,6 +94,8 @@ export default function HabitsPage() {
         allCompletedDates: hLogs,
         reminderTime: h.reminder_time,
         reminderEnabled: h.reminder_enabled,
+        goalId: h.goal_id,
+        goalTitle: h.goal_id ? goalLookup.get(h.goal_id) || null : null,
       }
     })
     setHabits(mapped)
@@ -163,14 +178,20 @@ export default function HabitsPage() {
   async function addHabit() {
     if (!newName.trim() || !userId) return
     setAdding(true)
-    const { data } = await supabase.from("habits").insert({
-      user_id: userId, name: newName.trim(), icon: newIcon,
-    }).select().single()
+    const payload: Record<string, string | null> = {
+      user_id: userId,
+      name: newName.trim(),
+      icon: newIcon,
+      goal_id: newGoalId || null,
+    }
+    const { data } = await supabase.from("habits").insert(payload).select().single()
     if (data) {
-      setHabits(prev => [...prev, { id: data.id, name: data.name, icon: data.icon, completedToday: false, streak: 0, allCompletedDates: [] }])
+      const goalTitle = goals.find(goal => goal.id === data.goal_id)?.title || null
+      setHabits(prev => [...prev, { id: data.id, name: data.name, icon: data.icon, completedToday: false, streak: 0, allCompletedDates: [], goalId: data.goal_id, goalTitle }])
     }
     setNewName("")
     setNewIcon("✅")
+    setNewGoalId("")
     setShowAdd(false)
     setAdding(false)
   }
@@ -229,6 +250,7 @@ export default function HabitsPage() {
               <div key={habit.id}>
                 <HabitCard
                   {...habit}
+                  goalTitle={habit.goalTitle}
                   onToggle={() => toggleHabit(habit)}
                   onDelete={() => deleteHabit(habit.id)}
                   onReminderClick={() => openReminderSettings(habit)}
@@ -302,6 +324,24 @@ export default function HabitsPage() {
                   autoFocus
                   maxLength={50}
                 />
+              </div>
+
+              <div>
+                <label style={{ display: "block", fontSize: "0.75rem", color: "#888", marginBottom: "0.4rem", fontFamily: "'Space Mono', monospace", letterSpacing: "0.05em" }}>
+                  HUBUNGKAN KE GOAL
+                </label>
+                <select
+                  className="input-field"
+                  value={newGoalId}
+                  onChange={e => setNewGoalId(e.target.value)}
+                >
+                  <option value="">Tanpa goal</option>
+                  {goals.map(goal => (
+                    <option key={goal.id} value={goal.id}>
+                      {goal.title}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <button
