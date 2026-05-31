@@ -6,7 +6,7 @@ import { getGreeting, todayISO, formatDate, pct, getDailyPrompt } from "@/lib/ut
 import { format, subDays } from "date-fns"
 import { id } from "date-fns/locale"
 import MiniBarChart from "@/components/MiniBarChart"
-import { Flame, CheckCircle2, Target, BookOpen, Plus, Loader2, Sparkles, Snowflake } from "lucide-react"
+import { Flame, CheckCircle2, Target, BookOpen, Plus, Loader2, Sparkles, Snowflake, ChevronRight, Calendar } from "lucide-react"
 import Link from "next/link"
 
 interface Habit {
@@ -28,6 +28,23 @@ interface WeekData {
   rate: number
 }
 
+interface GoalSummary {
+  id: string
+  title: string
+  icon: string
+  priority: string
+  target_date: string | null
+  completedMilestones: number
+  totalMilestones: number
+  progress: number
+}
+
+const PRIORITY_RANK: Record<string, number> = {
+  high: 0,
+  medium: 1,
+  low: 2,
+}
+
 export default function DashboardPage() {
   const supabase = createClient()
   const today = todayISO()
@@ -39,19 +56,37 @@ export default function DashboardPage() {
   const [streakAtRisk, setStreakAtRisk] = useState(false)
   const [weekData, setWeekData] = useState<WeekData[]>([])
   const [todayRate, setTodayRate] = useState(0)
+  const [goals, setGoals] = useState<GoalSummary[]>([])
   const [loading, setLoading] = useState(true)
+
+  const sortedGoals = [...goals].sort((a, b) => {
+    const priorityDiff = (PRIORITY_RANK[a.priority] ?? 99) - (PRIORITY_RANK[b.priority] ?? 99)
+    if (priorityDiff !== 0) return priorityDiff
+
+    const aTarget = a.target_date || "9999-12-31"
+    const bTarget = b.target_date || "9999-12-31"
+    const targetDiff = aTarget.localeCompare(bTarget)
+    if (targetDiff !== 0) return targetDiff
+
+    return a.progress - b.progress
+  })
+
+  const mainFocus = sortedGoals[0] || null
+  const secondaryFocus = sortedGoals.slice(1, 3)
 
   const fetchAll = useCallback(async () => {
     const { data: { user: u } } = await supabase.auth.getUser()
     if (!u) return
     setUser(u)
 
-    const [profileRes, habitsRes, logsRes, streakRes, weekLogsRes] = await Promise.all([
+    const [profileRes, habitsRes, logsRes, streakRes, weekLogsRes, goalsRes, milestonesRes] = await Promise.all([
       supabase.from("users").select("username").eq("id", u.id).single(),
       supabase.from("habits").select("id, name, icon").eq("user_id", u.id),
       supabase.from("habit_logs").select("habit_id").eq("user_id", u.id).eq("date", today).eq("completed", true),
       supabase.from("streaks").select("current_streak, best_streak, freeze_count, last_active").eq("user_id", u.id).single(),
       supabase.from("habit_logs").select("habit_id, date, completed").eq("user_id", u.id).gte("date", format(subDays(new Date(), 6), "yyyy-MM-dd")).lte("date", today),
+      supabase.from("goals").select("id, title, icon, priority, target_date").eq("user_id", u.id).order("created_at", { ascending: false }),
+      supabase.from("goal_milestones").select("goal_id, completed_at").eq("user_id", u.id),
     ])
 
     if (profileRes.data) setUsername(profileRes.data.username || u.email?.split("@")[0] || "")
@@ -80,6 +115,17 @@ export default function DashboardPage() {
       days.push({ day: dayLabel, rate })
     }
     setWeekData(days)
+
+    const goalsData = goalsRes.data || []
+    const milestonesData = milestonesRes.data || []
+    const mappedGoals: GoalSummary[] = goalsData.map(goal => {
+      const milestones = milestonesData.filter(m => m.goal_id === goal.id)
+      const totalMilestones = milestones.length
+      const completedMilestones = milestones.filter(m => Boolean(m.completed_at)).length
+      const progress = totalMilestones ? Math.round((completedMilestones / totalMilestones) * 100) : 0
+      return { ...goal, completedMilestones, totalMilestones, progress }
+    })
+    setGoals(mappedGoals)
     setLoading(false)
   }, [today])
 
@@ -163,6 +209,114 @@ export default function DashboardPage() {
         <StatCard icon={<Flame size={16} color="#ff7043" />} label="Streak" value={`${streak.current_streak}d`} sub={streak.freeze_count > 0 ? `🧊 ×${streak.freeze_count}` : undefined} />
         <StatCard icon={<Target size={16} style={{ color: "var(--accent)" }} />} label="Hari ini" value={`${todayRate}%`} highlight />
         <StatCard icon={<CheckCircle2 size={16} color="#64b5f6" />} label="Best" value={`${streak.best_streak}d`} />
+      </div>
+
+      {/* Main Focus */}
+      <div className="card glow-accent" style={{ borderColor: "var(--accent-border)", background: "var(--accent-dim)" }}>
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "0.75rem" }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p className="section-title" style={{ marginBottom: "0.35rem", color: "var(--accent)" }}>MAIN FOCUS</p>
+            {mainFocus ? (
+              <>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.35rem" }}>
+                  <span style={{ fontSize: "1.25rem" }}>{mainFocus.icon}</span>
+                  <h2 style={{ margin: 0, fontSize: "1.05rem", fontWeight: 700, color: "var(--text-primary)" }}>{mainFocus.title}</h2>
+                </div>
+                <p style={{ margin: 0, color: "var(--text-secondary)", fontSize: "0.82rem", lineHeight: 1.5 }}>
+                  {mainFocus.progress}% selesai · {mainFocus.completedMilestones}/{mainFocus.totalMilestones} milestone
+                  {mainFocus.target_date ? ` · target ${formatDate(mainFocus.target_date, "d MMM yyyy")}` : ""}
+                </p>
+                <div style={{ marginTop: "0.75rem", height: 7, borderRadius: 999, background: "rgba(255,255,255,0.08)", overflow: "hidden" }}>
+                  <div style={{ width: `${mainFocus.progress}%`, height: "100%", borderRadius: 999, background: "linear-gradient(90deg, var(--accent), var(--accent-hover))" }} />
+                </div>
+              </>
+            ) : (
+              <>
+                <h2 style={{ margin: 0, fontSize: "1.05rem", fontWeight: 700, color: "var(--text-primary)" }}>Belum ada fokus utama</h2>
+                <p style={{ margin: "0.3rem 0 0", color: "var(--text-secondary)", fontSize: "0.82rem", lineHeight: 1.5 }}>
+                  Tambahkan goal pertama untuk menentukan arah utama bulan ini.
+                </p>
+              </>
+            )}
+          </div>
+          <Link href="/goals" style={{ color: "var(--accent)", fontSize: "0.75rem", fontFamily: "'Space Mono', monospace", textDecoration: "none", display: "flex", alignItems: "center", gap: "0.25rem", flexShrink: 0 }}>
+            Goals <ChevronRight size={14} />
+          </Link>
+        </div>
+
+        {secondaryFocus.length > 0 && (
+          <div style={{ marginTop: "0.9rem", display: "flex", flexDirection: "column", gap: "0.45rem" }}>
+            <p style={{ margin: 0, fontSize: "0.68rem", color: "var(--text-secondary)", fontFamily: "'Space Mono', monospace", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+              Secondary focus
+            </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
+              {secondaryFocus.map(goal => (
+                <div key={goal.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.75rem", padding: "0.65rem 0.8rem", borderRadius: "0.8rem", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", minWidth: 0 }}>
+                    <span style={{ fontSize: "1rem" }}>{goal.icon}</span>
+                    <span style={{ fontSize: "0.84rem", fontWeight: 600, color: "var(--text-primary)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{goal.title}</span>
+                  </div>
+                  <span style={{ fontSize: "0.74rem", fontFamily: "'Space Mono', monospace", color: "var(--accent)" }}>{goal.progress}%</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Goal Overview */}
+      <div className="card">
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.75rem" }}>
+          <div>
+            <p className="section-title" style={{ marginBottom: 0 }}>GOAL MAP</p>
+            <p style={{ color: "#666", fontSize: "0.75rem", marginTop: "0.2rem" }}>Arah jangka panjang yang sedang kamu bangun</p>
+          </div>
+          <Link href="/goals" style={{ color: "var(--accent)", fontSize: "0.75rem", fontFamily: "'Space Mono', monospace", textDecoration: "none", display: "flex", alignItems: "center", gap: "0.25rem" }}>
+            Lihat semua <ChevronRight size={14} />
+          </Link>
+        </div>
+
+        {goals.length === 0 ? (
+          <div style={{ padding: "0.5rem 0 0.25rem" }}>
+            <p style={{ color: "#888", fontSize: "0.875rem", lineHeight: 1.6 }}>
+              Belum ada goal yang terhubung. Mulai dari satu tujuan besar, lalu pecah menjadi milestone.
+            </p>
+            <Link href="/goals" style={{ display: "inline-block", marginTop: "0.75rem" }}>
+              <button className="btn-ghost" style={{ width: "auto", padding: "0.5rem 0.9rem", fontSize: "0.8rem" }}>
+                <Plus size={14} style={{ marginRight: "0.35rem" }} /> Buat goal
+              </button>
+            </Link>
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+            {goals.slice(0, 3).map(goal => (
+              <div key={goal.id} style={{ padding: "0.85rem", borderRadius: "0.9rem", border: "1px solid #2e2e2e", background: "#1c1c1c" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.75rem", marginBottom: "0.55rem" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.45rem", minWidth: 0 }}>
+                    <span style={{ fontSize: "1.05rem" }}>{goal.icon}</span>
+                    <div style={{ minWidth: 0 }}>
+                      <p style={{ margin: 0, fontSize: "0.92rem", fontWeight: 600, color: "#f5f5f5", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{goal.title}</p>
+                      <p style={{ margin: 0, color: "#777", fontSize: "0.68rem", fontFamily: "'Space Mono', monospace" }}>
+                        {goal.completedMilestones}/{goal.totalMilestones} milestones
+                      </p>
+                    </div>
+                  </div>
+                  <span style={{ color: "var(--accent)", fontSize: "0.78rem", fontFamily: "'Space Mono', monospace", minWidth: 36, textAlign: "right" }}>{goal.progress}%</span>
+                </div>
+
+                <div style={{ height: 6, background: "#2e2e2e", borderRadius: 999, overflow: "hidden" }}>
+                  <div style={{ height: "100%", width: `${goal.progress}%`, background: "linear-gradient(90deg, var(--accent), var(--accent-hover))" }} />
+                </div>
+
+                {goal.target_date && (
+                  <div style={{ marginTop: "0.5rem", display: "flex", alignItems: "center", gap: "0.35rem", color: "#7c7c7c", fontSize: "0.7rem", fontFamily: "'Space Mono', monospace" }}>
+                    <Calendar size={10} /> Target {formatDate(goal.target_date, "d MMM yyyy")}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Streak at risk banner */}

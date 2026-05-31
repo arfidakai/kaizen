@@ -2,10 +2,11 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { LayoutDashboard, CheckSquare, BookOpen, BarChart2, User } from "lucide-react"
+import { LayoutDashboard, CheckSquare, Target, BookOpen, BarChart2, User } from "lucide-react"
 
 const navItems = [
   { href: "/dashboard", icon: LayoutDashboard, label: "Home" },
+  { href: "/goals", icon: Target, label: "Goals" },
   { href: "/habits", icon: CheckSquare, label: "Habits" },
   { href: "/journal", icon: BookOpen, label: "Journal" },
   { href: "/stats", icon: BarChart2, label: "Stats" },
@@ -45,11 +46,11 @@ export default function BottomNav() {
               flexDirection: "column",
               alignItems: "center",
               gap: "0.2rem",
-              padding: "0.4rem 0.75rem",
+              padding: "0.4rem 0.55rem",
               borderRadius: "0.75rem",
               transition: "all 0.2s",
               textDecoration: "none",
-              minWidth: 56,
+              minWidth: 48,
             }}
           >
             <div style={{
