@@ -264,61 +264,6 @@ export default function DashboardPage() {
         )}
       </div>
 
-      {/* Goal Overview */}
-      <div className="card">
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.75rem" }}>
-          <div>
-            <p className="section-title" style={{ marginBottom: 0 }}>GOAL MAP</p>
-            <p style={{ color: "#666", fontSize: "0.75rem", marginTop: "0.2rem" }}>Arah jangka panjang yang sedang kamu bangun</p>
-          </div>
-          <Link href="/goals" style={{ color: "var(--accent)", fontSize: "0.75rem", fontFamily: "'Space Mono', monospace", textDecoration: "none", display: "flex", alignItems: "center", gap: "0.25rem" }}>
-            Lihat semua <ChevronRight size={14} />
-          </Link>
-        </div>
-
-        {goals.length === 0 ? (
-          <div style={{ padding: "0.5rem 0 0.25rem" }}>
-            <p style={{ color: "#888", fontSize: "0.875rem", lineHeight: 1.6 }}>
-              Belum ada goal yang terhubung. Mulai dari satu tujuan besar, lalu pecah menjadi milestone.
-            </p>
-            <Link href="/goals" style={{ display: "inline-block", marginTop: "0.75rem" }}>
-              <button className="btn-ghost" style={{ width: "auto", padding: "0.5rem 0.9rem", fontSize: "0.8rem" }}>
-                <Plus size={14} style={{ marginRight: "0.35rem" }} /> Buat goal
-              </button>
-            </Link>
-          </div>
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-            {goals.slice(0, 3).map(goal => (
-              <div key={goal.id} style={{ padding: "0.85rem", borderRadius: "0.9rem", border: "1px solid #2e2e2e", background: "#1c1c1c" }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.75rem", marginBottom: "0.55rem" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "0.45rem", minWidth: 0 }}>
-                    <span style={{ fontSize: "1.05rem" }}>{goal.icon}</span>
-                    <div style={{ minWidth: 0 }}>
-                      <p style={{ margin: 0, fontSize: "0.92rem", fontWeight: 600, color: "#f5f5f5", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{goal.title}</p>
-                      <p style={{ margin: 0, color: "#777", fontSize: "0.68rem", fontFamily: "'Space Mono', monospace" }}>
-                        {goal.completedMilestones}/{goal.totalMilestones} milestones
-                      </p>
-                    </div>
-                  </div>
-                  <span style={{ color: "var(--accent)", fontSize: "0.78rem", fontFamily: "'Space Mono', monospace", minWidth: 36, textAlign: "right" }}>{goal.progress}%</span>
-                </div>
-
-                <div style={{ height: 6, background: "#2e2e2e", borderRadius: 999, overflow: "hidden" }}>
-                  <div style={{ height: "100%", width: `${goal.progress}%`, background: "linear-gradient(90deg, var(--accent), var(--accent-hover))" }} />
-                </div>
-
-                {goal.target_date && (
-                  <div style={{ marginTop: "0.5rem", display: "flex", alignItems: "center", gap: "0.35rem", color: "#7c7c7c", fontSize: "0.7rem", fontFamily: "'Space Mono', monospace" }}>
-                    <Calendar size={10} /> Target {formatDate(goal.target_date, "d MMM yyyy")}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
       {/* Streak at risk banner */}
       {streakAtRisk && streak.freeze_count > 0 && (
         <div className="card" style={{ borderColor: "#3b82f6", background: "rgba(59,130,246,0.08)", display: "flex", alignItems: "center", gap: "0.75rem" }}>

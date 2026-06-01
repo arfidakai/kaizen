@@ -31,6 +31,13 @@ interface GoalCard extends Goal {
   progress: number
 }
 
+function parseMilestoneInput(value: string) {
+  return value
+    .split(/\r?\n+/)
+    .map(line => line.trim().replace(/^[-*•\d.)\s]+/, "").trim())
+    .filter(Boolean)
+}
+
 const PRIORITY_OPTIONS: { value: Priority; label: string }[] = [
   { value: "high", label: "High" },
   { value: "medium", label: "Medium" },
@@ -57,7 +64,7 @@ export default function GoalsPage() {
   const [goalTargetDate, setGoalTargetDate] = useState("")
   const [savingGoal, setSavingGoal] = useState(false)
   const [selectedGoalId, setSelectedGoalId] = useState<string | null>(null)
-  const [milestoneTitle, setMilestoneTitle] = useState("")
+  const [milestoneInput, setMilestoneInput] = useState("")
   const [savingMilestone, setSavingMilestone] = useState(false)
 
   const fetchGoals = useCallback(async () => {
@@ -127,22 +134,27 @@ export default function GoalsPage() {
   }
 
   async function addMilestone() {
-    if (!userId || !selectedGoalId || !milestoneTitle.trim()) return
+    if (!userId || !selectedGoalId || !milestoneInput.trim()) return
     const currentGoal = goalCards.find(goal => goal.id === selectedGoalId)
+    const milestoneTitles = parseMilestoneInput(milestoneInput)
+    if (milestoneTitles.length === 0) return
     setSavingMilestone(true)
 
-    const { data } = await supabase.from("goal_milestones").insert({
+    const startingIndex = currentGoal?.milestones.length || 0
+    const insertPayload = milestoneTitles.map((title, index) => ({
       user_id: userId,
       goal_id: selectedGoalId,
-      title: milestoneTitle.trim(),
-      order_index: currentGoal?.milestones.length || 0,
-    }).select("id, goal_id, title, order_index, completed_at").single()
+      title,
+      order_index: startingIndex + index,
+    }))
 
-    if (data) {
-      setGoals(prev => prev.map(goal => goal.id === selectedGoalId ? { ...goal, milestones: [...goal.milestones, data] } : goal))
+    const { data } = await supabase.from("goal_milestones").insert(insertPayload).select("id, goal_id, title, order_index, completed_at")
+
+    if (data?.length) {
+      setGoals(prev => prev.map(goal => goal.id === selectedGoalId ? { ...goal, milestones: [...goal.milestones, ...data] } : goal))
     }
 
-    setMilestoneTitle("")
+    setMilestoneInput("")
     setSavingMilestone(false)
   }
 
@@ -162,7 +174,7 @@ export default function GoalsPage() {
     setGoals(prev => prev.filter(goal => goal.id !== goalId))
     if (selectedGoalId === goalId) {
       setSelectedGoalId(null)
-      setMilestoneTitle("")
+      setMilestoneInput("")
     }
   }
 
@@ -331,14 +343,24 @@ export default function GoalsPage() {
       )}
 
       {selectedGoal && (
-        <div style={{ position: "fixed", inset: 0, zIndex: 110, background: "rgba(0,0,0,0.72)", backdropFilter: "blur(4px)", display: "flex", alignItems: "flex-end", justifyContent: "center" }} onClick={() => { setSelectedGoalId(null); setMilestoneTitle("") }}>
-          <div onClick={e => e.stopPropagation()} style={{ width: "100%", maxWidth: 420, background: "#1c1c1c", borderTopLeftRadius: "1.5rem", borderTopRightRadius: "1.5rem", padding: "1.25rem", border: "1px solid #2e2e2e" }}>
-            <p className="section-title" style={{ marginBottom: "0.4rem" }}>ADD MILESTONE</p>
+        <div style={{ position: "fixed", inset: 0, zIndex: 110, background: "rgba(0,0,0,0.72)", backdropFilter: "blur(4px)", display: "flex", alignItems: "flex-end", justifyContent: "center" }} onClick={() => { setSelectedGoalId(null); setMilestoneInput("") }}>
+          <div onClick={e => e.stopPropagation()} style={{ width: "100%", maxWidth: 520, background: "#1c1c1c", borderTopLeftRadius: "1.5rem", borderTopRightRadius: "1.5rem", padding: "1.25rem", border: "1px solid #2e2e2e" }}>
+            <p className="section-title" style={{ marginBottom: "0.4rem" }}>ADD MILESTONES</p>
             <h3 style={{ margin: 0, marginBottom: "1rem", fontSize: "1.05rem" }}>{selectedGoal.icon} {selectedGoal.title}</h3>
             <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-              <input value={milestoneTitle} onChange={e => setMilestoneTitle(e.target.value)} placeholder="Prompt Engineering" className="input" />
+              <textarea
+                value={milestoneInput}
+                onChange={e => setMilestoneInput(e.target.value)}
+                placeholder={`- Research materials\n- Draft outline\n- Practice 3 times`}
+                className="input"
+                rows={5}
+                style={{ resize: "vertical", minHeight: 120, lineHeight: 1.5 }}
+              />
+              <p style={{ margin: 0, color: "#777", fontSize: "0.74rem", lineHeight: 1.5 }}>
+                Tulis satu milestone per baris. Bullet, nomor, atau tanda bintang akan dibersihkan otomatis.
+              </p>
               <button onClick={addMilestone} className="btn-primary" disabled={savingMilestone}>
-                {savingMilestone ? "Menyimpan..." : "Tambah milestone"}
+                {savingMilestone ? "Menyimpan..." : "Tambah semua milestone"}
               </button>
             </div>
           </div>

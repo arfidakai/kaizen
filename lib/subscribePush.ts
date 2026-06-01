@@ -16,7 +16,7 @@ export async function subscribeToPush() {
   }
 
   // Validate VAPID key
-  const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
+  const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY?.trim()
   if (!vapidKey) {
     console.error("NEXT_PUBLIC_VAPID_PUBLIC_KEY tidak di-set")
     return false
@@ -38,16 +38,49 @@ export async function subscribeToPush() {
       }
     }
 
-    // Register service worker
+    // Register service worker dan ambil registration yang aktif
+    console.log("[Push] Registering service worker...")
     await navigator.serviceWorker.register("/sw.js", { scope: "/" })
-
+    console.log("[Push] Waiting for service worker ready...")
     const registration = await navigator.serviceWorker.ready
+    
+    // Wait untuk service worker fully active dengan timeout 3 detik
+    try {
+      await Promise.race([
+        new Promise<void>(resolve => {
+          if (navigator.serviceWorker.controller) {
+            resolve()
+          } else {
+            navigator.serviceWorker.addEventListener("controllerchange", () => resolve(), { once: true })
+          }
+        }),
+        new Promise<void>((_, reject) => setTimeout(() => reject(new Error("Controller timeout")), 3000))
+      ])
+      console.log("[Push] Service worker controller is active")
+    } catch (controllerErr) {
+      console.warn("[Push] Service worker controller wait timeout or failed, proceeding anyway:", controllerErr)
+    }
 
-    // Subscribe to push
-    const subscription = await registration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(vapidKey),
-    })
+    const applicationServerKey = urlBase64ToUint8Array(vapidKey)
+    console.log("[Push] VAPID key converted, attempting subscribe...")
+
+    // Reuse subscription yang sudah ada kalau browser sudah pernah subscribe
+    let subscription = await registration.pushManager.getSubscription()
+    console.log("[Push] Existing subscription check:", subscription ? "Found" : "Not found")
+
+    if (!subscription) {
+      try {
+        subscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey,
+        })
+        console.log("[Push] Subscribe success")
+      } 
+      catch (subscribeError) {
+        console.error("[Push] First subscribe error:", subscribeError)
+        throw subscribeError
+      }
+    }
 
     // Ambil session untuk Authorization header
     const supabase = createClient()
@@ -70,8 +103,42 @@ export async function subscribeToPush() {
 
     return true
   } catch (error) {
-    console.error("Subscribe to push error:", error)
+    if (error instanceof Error) {
+      if (error.name === "AbortError") {
+        console.error("[Push] AbortError - push service error. Cek: 1) Browser modern (Chrome 50+, Firefox 48+), 2) HTTPS atau localhost:3000, 3) Notification permission granted, 4) Browser push service (FCM/Mozilla Push).")
+      } else {
+        console.error("[Push] Subscribe error:", error.message)
+      }
+    } else {
+      console.error("[Push] Subscribe error:", error)
+    }
     return false
+  }
+}
+
+async function resetPushState() {
+  try {
+    const registrations = await navigator.serviceWorker.getRegistrations()
+    await Promise.all(
+      registrations.map(async registration => {
+        try {
+          const subscription = await registration.pushManager.getSubscription()
+          if (subscription) {
+            await subscription.unsubscribe()
+          }
+        } catch {
+          // Ignore cleanup errors and continue unregistering.
+        }
+
+        try {
+          await registration.unregister()
+        } catch {
+          // Ignore cleanup errors and continue.
+        }
+      })
+    )
+  } catch {
+    // Ignore cleanup errors.
   }
 }
 
