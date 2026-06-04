@@ -16,6 +16,11 @@ interface Habit {
   completed: boolean
 }
 
+interface HomeProfile {
+  username: string
+  avatar_url: string | null
+}
+
 interface StreakData {
   current_streak: number
   best_streak: number
@@ -51,6 +56,7 @@ export default function DashboardPage() {
 
   const [user, setUser] = useState<{ id: string; email?: string } | null>(null)
   const [username, setUsername] = useState("")
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [habits, setHabits] = useState<Habit[]>([])
   const [streak, setStreak] = useState<StreakData>({ current_streak: 0, best_streak: 0, freeze_count: 0, last_active: null })
   const [streakAtRisk, setStreakAtRisk] = useState(false)
@@ -80,7 +86,7 @@ export default function DashboardPage() {
     setUser(u)
 
     const [profileRes, habitsRes, logsRes, streakRes, weekLogsRes, goalsRes, milestonesRes] = await Promise.all([
-      supabase.from("users").select("username").eq("id", u.id).single(),
+      supabase.from("users").select("username, avatar_url").eq("id", u.id).single(),
       supabase.from("habits").select("id, name, icon").eq("user_id", u.id),
       supabase.from("habit_logs").select("habit_id").eq("user_id", u.id).eq("date", today).eq("completed", true),
       supabase.from("streaks").select("current_streak, best_streak, freeze_count, last_active").eq("user_id", u.id).single(),
@@ -89,7 +95,11 @@ export default function DashboardPage() {
       supabase.from("goal_milestones").select("goal_id, completed_at").eq("user_id", u.id),
     ])
 
-    if (profileRes.data) setUsername(profileRes.data.username || u.email?.split("@")[0] || "")
+    if (profileRes.data) {
+      const profile = profileRes.data as HomeProfile
+      setUsername(profile.username || u.email?.split("@")[0] || "")
+      setAvatarUrl(profile.avatar_url || null)
+    }
     if (streakRes.data) {
       const s = streakRes.data
       setStreak({ ...s, freeze_count: s.freeze_count ?? 1 })
@@ -194,14 +204,37 @@ export default function DashboardPage() {
     <div className="animate-fade-in" style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
 
       {/* Header */}
-      <div>
-        <p style={{ color: "#888", fontSize: "0.8rem", fontFamily: "'Space Mono', monospace" }}>
-          {formatDate(today, "EEEE, d MMMM")}
-        </p>
-        <h1 style={{ fontSize: "1.5rem", fontWeight: 700, marginTop: "0.2rem", lineHeight: 1.2 }}>
-          {getGreeting()},<br />
-          <span className="text-gradient">{username || "Kamu"} 👋</span>
-        </h1>
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "0.75rem" }}>
+        <div>
+          <p style={{ color: "#888", fontSize: "0.8rem", fontFamily: "'Space Mono', monospace" }}>
+            {formatDate(today, "EEEE, d MMMM")}
+          </p>
+          <h1 style={{ fontSize: "1.5rem", fontWeight: 700, marginTop: "0.2rem", lineHeight: 1.2 }}>
+            {getGreeting()},<br />
+            <span className="text-gradient">{username || "Kamu"} 👋</span>
+          </h1>
+        </div>
+
+        <Link href="/profile" aria-label="Buka profil" style={{ textDecoration: "none", flexShrink: 0 }}>
+          <div style={{
+            width: 44,
+            height: 44,
+            borderRadius: "50%",
+            border: "1px solid var(--border-color)",
+            background: "var(--accent-dim)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            overflow: "hidden",
+            boxShadow: "var(--accent-glow)",
+          }}>
+            {avatarUrl?.includes("http") ? (
+              <img src={avatarUrl} alt={username || "Profile"} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+            ) : (
+              <span style={{ fontSize: "1.15rem" }}>{avatarUrl || "🧑"}</span>
+            )}
+          </div>
+        </Link>
       </div>
 
       {/* Score Cards */}

@@ -2,16 +2,12 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { LayoutDashboard, CheckSquare, Target, BookOpen, BarChart2, User, Calendar } from "lucide-react"
+import { LayoutDashboard, CheckSquare, BookOpen } from "lucide-react"
 
 const navItems = [
   { href: "/dashboard", icon: LayoutDashboard, label: "Home" },
-  { href: "/goals", icon: Target, label: "Goals" },
   { href: "/habits", icon: CheckSquare, label: "Habits" },
-  { href: "/calendar", icon: Calendar, label: "Calendar" },
   { href: "/journal", icon: BookOpen, label: "Journal" },
-  { href: "/stats", icon: BarChart2, label: "Stats" },
-  { href: "/profile", icon: User, label: "Profil" },
 ]
 
 export default function BottomNav() {
