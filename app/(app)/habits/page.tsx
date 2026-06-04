@@ -1,16 +1,18 @@
 "use client"
 
-import { useEffect, useState, useCallback } from "react"
+import { useEffect, useState, useCallback, useMemo } from "react"
 import { createClient } from "@/lib/supabase"
 import { todayISO, calcStreak } from "@/lib/utils"
 import { format, subDays } from "date-fns"
 import HabitCard from "@/components/HabitCard"
 import ContributionGraph from "@/components/ContributionGraph"
+import CalendarView from "@/components/CalendarView"
 import HabitReminderModal from "@/components/HabitReminderModal"
 import ReminderSettingsModal from "@/components/ReminderSettingsModal"
 import { useNotification } from "@/context/NotificationContext"
 import { useHabitReminders } from "@/lib/useHabitReminders"
-import { Plus, Loader2, X } from "lucide-react"
+import Link from "next/link"
+import { Plus, Loader2, X, List, CalendarDays, Target } from "lucide-react"
 
 const HABIT_ICONS = ["✅","🏃","📚","💪","🧘","🥗","💧","😴","🎯","✍️","🎵","🌿","🧠","🏋️","🚴","🧹","💊","🙏","🎨","📱"]
 
@@ -30,7 +32,12 @@ interface Habit {
 interface GoalOption {
   id: string
   title: string
+  priority: string
+  target_date: string | null
 }
+
+type HabitsTab = "habits" | "goals"
+type HabitsView = "list" | "calendar"
 
 export default function HabitsPage() {
   const supabase = createClient()
@@ -52,6 +59,13 @@ export default function HabitsPage() {
   const [settingsHabit, setSettingsHabit] = useState<Habit | null>(null)
   const [showReminderSettings, setShowReminderSettings] = useState(false)
   const [goals, setGoals] = useState<GoalOption[]>([])
+  const [activeTab, setActiveTab] = useState<HabitsTab>("habits")
+  const [habitsView, setHabitsView] = useState<HabitsView>("list")
+
+  const calendarHabits = useMemo(
+    () => habits.map(habit => ({ id: habit.id, title: habit.name, color: habit.completedToday ? "#4f46e5" : undefined })),
+    [habits]
+  )
 
   const fetchHabits = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser()
@@ -65,7 +79,7 @@ export default function HabitsPage() {
         .eq("user_id", user.id)
         .eq("completed", true)
         .gte("date", format(subDays(new Date(), 84), "yyyy-MM-dd")),
-      supabase.from("goals").select("id, title").eq("user_id", user.id).order("created_at", { ascending: false }),
+      supabase.from("goals").select("id, title, priority, target_date").eq("user_id", user.id).order("created_at", { ascending: false }),
     ])
 
     const allHabits = habitsRes.data || []
@@ -212,54 +226,147 @@ export default function HabitsPage() {
 
   return (
     <div className="animate-fade-in" style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
-
-      {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "0.75rem", flexWrap: "wrap" }}>
         <div>
-          <h1 style={{ fontSize: "1.4rem", fontWeight: 700 }}>Habit Tracker</h1>
+          <h1 style={{ fontSize: "1.4rem", fontWeight: 700, marginBottom: "0.2rem" }}>Habits</h1>
           <p style={{ color: "#888", fontSize: "0.8rem", fontFamily: "'Space Mono', monospace" }}>
-            {habits.length} habit aktif
+            {habits.length} habit aktif · {goals.length} goal
           </p>
         </div>
-        <button
-          onClick={() => setShowAdd(true)}
-          className="btn-primary"
-          style={{ width: "auto", padding: "0.5rem 1rem", fontSize: "0.85rem", display: "flex", alignItems: "center", gap: "0.35rem" }}
-        >
-          <Plus size={16} /> Tambah
-        </button>
-      </div>
 
-      {/* Contribution Graph */}
-      <div className="card">
-        <p className="section-title">AKTIVITAS 11 MINGGU</p>
-        <ContributionGraph completedDates={allCompletedDates} weeks={11} />
-      </div>
-
-      {/* Habits List */}
-      <div>
-        <p className="section-title">SEMUA HABIT</p>
-        {habits.length === 0 ? (
-          <div className="card" style={{ textAlign: "center", padding: "2rem 1rem" }}>
-            <p style={{ fontSize: "2rem", marginBottom: "0.5rem" }}>🎯</p>
-            <p style={{ color: "#888", fontSize: "0.875rem" }}>Belum ada habit. Mulai buat satu!</p>
-          </div>
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-            {habits.map(habit => (
-              <div key={habit.id}>
-                <HabitCard
-                  {...habit}
-                  goalTitle={habit.goalTitle}
-                  onToggle={() => toggleHabit(habit)}
-                  onDelete={() => deleteHabit(habit.id)}
-                  onReminderClick={() => openReminderSettings(habit)}
-                />
-              </div>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
+          <div style={{ display: "inline-flex", padding: "0.2rem", borderRadius: 999, background: "#1b1b1b", border: "1px solid #2e2e2e" }}>
+            {(["habits", "goals"] as HabitsTab[]).map(tab => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                style={{
+                  padding: "0.45rem 0.8rem",
+                  borderRadius: 999,
+                  border: "none",
+                  cursor: "pointer",
+                  background: activeTab === tab ? "var(--accent)" : "transparent",
+                  color: activeTab === tab ? "#0f0f0f" : "var(--text-secondary)",
+                  fontSize: "0.78rem",
+                  fontWeight: 700,
+                }}
+              >
+                {tab === "habits" ? "Daily Habits" : "Long-term Goals"}
+              </button>
             ))}
           </div>
-        )}
+
+          {activeTab === "habits" && (
+            <button
+              onClick={() => setShowAdd(true)}
+              className="btn-primary"
+              style={{ width: "auto", padding: "0.5rem 1rem", fontSize: "0.85rem", display: "flex", alignItems: "center", gap: "0.35rem" }}
+            >
+              <Plus size={16} /> Tambah
+            </button>
+          )}
+        </div>
       </div>
+
+      {activeTab === "habits" ? (
+        <>
+          <div className="card">
+            <p className="section-title">AKTIVITAS 11 MINGGU</p>
+            <ContributionGraph completedDates={allCompletedDates} weeks={11} />
+          </div>
+
+          <div className="card" style={{ padding: "1rem" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.75rem", marginBottom: "0.9rem" }}>
+              <p className="section-title" style={{ marginBottom: 0 }}>SEMUA HABIT</p>
+              <div style={{ display: "inline-flex", padding: "0.2rem", borderRadius: 999, background: "#1b1b1b", border: "1px solid #2e2e2e" }}>
+                {(["list", "calendar"] as HabitsView[]).map(view => (
+                  <button
+                    key={view}
+                    onClick={() => setHabitsView(view)}
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "0.35rem",
+                      padding: "0.4rem 0.75rem",
+                      borderRadius: 999,
+                      border: "none",
+                      cursor: "pointer",
+                      background: habitsView === view ? "var(--accent)" : "transparent",
+                      color: habitsView === view ? "#0f0f0f" : "var(--text-secondary)",
+                      fontSize: "0.76rem",
+                      fontWeight: 700,
+                    }}
+                  >
+                    {view === "list" ? <List size={14} /> : <CalendarDays size={14} />}
+                    {view === "list" ? "List" : "Calendar"}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {habitsView === "list" ? (
+              habits.length === 0 ? (
+                <div style={{ textAlign: "center", padding: "2rem 1rem" }}>
+                  <p style={{ fontSize: "2rem", marginBottom: "0.5rem" }}>🎯</p>
+                  <p style={{ color: "#888", fontSize: "0.875rem" }}>Belum ada habit. Mulai buat satu!</p>
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                  {habits.map(habit => (
+                    <div key={habit.id}>
+                      <HabitCard
+                        {...habit}
+                        goalTitle={habit.goalTitle}
+                        onToggle={() => toggleHabit(habit)}
+                        onDelete={() => deleteHabit(habit.id)}
+                        onReminderClick={() => openReminderSettings(habit)}
+                      />
+                    </div>
+                  ))}
+                </div>
+              )
+            ) : (
+              <CalendarView habits={calendarHabits} />
+            )}
+          </div>
+        </>
+      ) : (
+        <div className="card" style={{ padding: "1rem" }}>
+          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "0.75rem", marginBottom: "1rem" }}>
+            <div>
+              <p className="section-title" style={{ marginBottom: "0.35rem" }}>LONG-TERM GOALS</p>
+              <h2 style={{ margin: 0, fontSize: "1rem" }}>Goal dan habit sekarang digabung dalam satu ruang kerja.</h2>
+              <p style={{ margin: "0.25rem 0 0", color: "var(--text-secondary)", fontSize: "0.82rem", lineHeight: 1.5 }}>
+                Di sini kamu bisa lihat tujuan besar, lalu pindah ke tab Habits untuk langkah harian dan kalender.
+              </p>
+            </div>
+            <Link href="/goals" style={{ color: "var(--accent)", fontSize: "0.75rem", fontFamily: "'Space Mono', monospace", textDecoration: "none", flexShrink: 0, display: "flex", alignItems: "center", gap: "0.25rem" }}>
+              Buka Goals
+            </Link>
+          </div>
+
+          {goals.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "2rem 1rem" }}>
+              <p style={{ fontSize: "2rem", marginBottom: "0.5rem" }}>🎯</p>
+              <p style={{ color: "#888", fontSize: "0.875rem" }}>Belum ada goal. Tambahkan tujuan besar di halaman Goals.</p>
+            </div>
+          ) : (
+            <div style={{ display: "grid", gap: "0.5rem" }}>
+              {goals.map(goal => (
+                <div key={goal.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.75rem", padding: "0.9rem 1rem", borderRadius: "0.85rem", background: "#1c1c1c", border: "1px solid #2e2e2e" }}>
+                  <div style={{ minWidth: 0 }}>
+                    <p style={{ margin: 0, color: "var(--text-primary)", fontWeight: 700, fontSize: "0.92rem" }}>{goal.title}</p>
+                    <p style={{ margin: "0.15rem 0 0", color: "var(--text-secondary)", fontSize: "0.72rem", fontFamily: "'Space Mono', monospace" }}>
+                      {goal.priority.toUpperCase()} {goal.target_date ? `· target ${goal.target_date}` : ""}
+                    </p>
+                  </div>
+                  <span style={{ fontSize: "0.72rem", fontFamily: "'Space Mono', monospace", color: "var(--accent)" }}>GOAL</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Add Modal */}
       {showAdd && (
