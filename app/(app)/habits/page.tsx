@@ -1,18 +1,17 @@
 "use client"
 
-import { useEffect, useState, useCallback, useMemo } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { createClient } from "@/lib/supabase"
 import { todayISO, calcStreak } from "@/lib/utils"
 import { format, subDays } from "date-fns"
 import HabitCard from "@/components/HabitCard"
 import ContributionGraph from "@/components/ContributionGraph"
-import CalendarView from "@/components/CalendarView"
 import HabitReminderModal from "@/components/HabitReminderModal"
 import ReminderSettingsModal from "@/components/ReminderSettingsModal"
 import { useNotification } from "@/context/NotificationContext"
 import { useHabitReminders } from "@/lib/useHabitReminders"
 import Link from "next/link"
-import { Plus, Loader2, X, List, CalendarDays, Target } from "lucide-react"
+import { Plus, Loader2, X } from "lucide-react"
 
 const HABIT_ICONS = ["✅","🏃","📚","💪","🧘","🥗","💧","😴","🎯","✍️","🎵","🌿","🧠","🏋️","🚴","🧹","💊","🙏","🎨","📱"]
 
@@ -37,7 +36,6 @@ interface GoalOption {
 }
 
 type HabitsTab = "habits" | "goals"
-type HabitsView = "list" | "calendar"
 
 export default function HabitsPage() {
   const supabase = createClient()
@@ -60,12 +58,6 @@ export default function HabitsPage() {
   const [showReminderSettings, setShowReminderSettings] = useState(false)
   const [goals, setGoals] = useState<GoalOption[]>([])
   const [activeTab, setActiveTab] = useState<HabitsTab>("habits")
-  const [habitsView, setHabitsView] = useState<HabitsView>("list")
-
-  const calendarHabits = useMemo(
-    () => habits.map(habit => ({ id: habit.id, title: habit.name, color: habit.completedToday ? "#4f46e5" : undefined })),
-    [habits]
-  )
 
   const fetchHabits = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser()
@@ -130,11 +122,6 @@ export default function HabitsPage() {
       await supabase.from("habit_logs").delete().eq("habit_id", habit.id).eq("date", today)
       addNotification(`${habit.name} dibatalkan`, "info", 2000)
     }
-  }
-
-  function showHabitReminder(habit: Habit) {
-    setReminderHabit(habit)
-    setShowReminder(true)
   }
 
   function openReminderSettings(habit: Habit) {
@@ -278,55 +265,27 @@ export default function HabitsPage() {
           <div className="card" style={{ padding: "1rem" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.75rem", marginBottom: "0.9rem" }}>
               <p className="section-title" style={{ marginBottom: 0 }}>SEMUA HABIT</p>
-              <div style={{ display: "inline-flex", padding: "0.2rem", borderRadius: 999, background: "#1b1b1b", border: "1px solid #2e2e2e" }}>
-                {(["list", "calendar"] as HabitsView[]).map(view => (
-                  <button
-                    key={view}
-                    onClick={() => setHabitsView(view)}
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: "0.35rem",
-                      padding: "0.4rem 0.75rem",
-                      borderRadius: 999,
-                      border: "none",
-                      cursor: "pointer",
-                      background: habitsView === view ? "var(--accent)" : "transparent",
-                      color: habitsView === view ? "#0f0f0f" : "var(--text-secondary)",
-                      fontSize: "0.76rem",
-                      fontWeight: 700,
-                    }}
-                  >
-                    {view === "list" ? <List size={14} /> : <CalendarDays size={14} />}
-                    {view === "list" ? "List" : "Calendar"}
-                  </button>
-                ))}
-              </div>
             </div>
 
-            {habitsView === "list" ? (
-              habits.length === 0 ? (
-                <div style={{ textAlign: "center", padding: "2rem 1rem" }}>
-                  <p style={{ fontSize: "2rem", marginBottom: "0.5rem" }}>🎯</p>
-                  <p style={{ color: "#888", fontSize: "0.875rem" }}>Belum ada habit. Mulai buat satu!</p>
-                </div>
-              ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                  {habits.map(habit => (
-                    <div key={habit.id}>
-                      <HabitCard
-                        {...habit}
-                        goalTitle={habit.goalTitle}
-                        onToggle={() => toggleHabit(habit)}
-                        onDelete={() => deleteHabit(habit.id)}
-                        onReminderClick={() => openReminderSettings(habit)}
-                      />
-                    </div>
-                  ))}
-                </div>
-              )
+            {habits.length === 0 ? (
+              <div style={{ textAlign: "center", padding: "2rem 1rem" }}>
+                <p style={{ fontSize: "2rem", marginBottom: "0.5rem" }}>🎯</p>
+                <p style={{ color: "#888", fontSize: "0.875rem" }}>Belum ada habit. Mulai buat satu!</p>
+              </div>
             ) : (
-              <CalendarView habits={calendarHabits} />
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                {habits.map(habit => (
+                  <div key={habit.id}>
+                    <HabitCard
+                      {...habit}
+                      goalTitle={habit.goalTitle}
+                      onToggle={() => toggleHabit(habit)}
+                      onDelete={() => deleteHabit(habit.id)}
+                      onReminderClick={() => openReminderSettings(habit)}
+                    />
+                  </div>
+                ))}
+              </div>
             )}
           </div>
         </>
@@ -337,7 +296,7 @@ export default function HabitsPage() {
               <p className="section-title" style={{ marginBottom: "0.35rem" }}>LONG-TERM GOALS</p>
               <h2 style={{ margin: 0, fontSize: "1rem" }}>Goal dan habit sekarang digabung dalam satu ruang kerja.</h2>
               <p style={{ margin: "0.25rem 0 0", color: "var(--text-secondary)", fontSize: "0.82rem", lineHeight: 1.5 }}>
-                Di sini kamu bisa lihat tujuan besar, lalu pindah ke tab Habits untuk langkah harian dan kalender.
+                Di sini kamu bisa lihat tujuan besar, lalu pindah ke tab Habits untuk langkah harian.
               </p>
             </div>
             <Link href="/goals" style={{ color: "var(--accent)", fontSize: "0.75rem", fontFamily: "'Space Mono', monospace", textDecoration: "none", flexShrink: 0, display: "flex", alignItems: "center", gap: "0.25rem" }}>
