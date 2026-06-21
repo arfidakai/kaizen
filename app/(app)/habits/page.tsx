@@ -78,18 +78,13 @@ export default function HabitsPage() {
     const allLogs = logsRes.data || []
     const allGoals = goalsRes.data || []
     setGoals(allGoals)
+    
     const goalLookup = new Map(allGoals.map(goal => [goal.id, goal.title]))
     const todayLogs = new Set(allLogs.filter(l => l.date === today).map(l => l.habit_id))
-    const totalHabits = allHabits.length
 
-    const dateCounts: Record<string, number> = {}
-    for (const log of allLogs) {
-      dateCounts[log.date] = (dateCounts[log.date] || 0) + 1
-    }
-    const fullDays = Object.entries(dateCounts)
-      .filter(([, cnt]) => cnt >= totalHabits && totalHabits > 0)
-      .map(([d]) => d)
-    setAllCompletedDates(fullDays)
+    // FIX LOGIKA GRAFIK: Kirim daftar seluruh string tanggal log mentah agar intensitas rasionya terbaca otomatis
+    const customLogs = allLogs.map(log => log.date)
+    setAllCompletedDates(customLogs)
 
     const mapped: Habit[] = allHabits.map(h => {
       const hLogs = allLogs.filter(l => l.habit_id === h.id).map(l => l.date)
@@ -122,6 +117,8 @@ export default function HabitsPage() {
       await supabase.from("habit_logs").delete().eq("habit_id", habit.id).eq("date", today)
       addNotification(`${habit.name} dibatalkan`, "info", 2000)
     }
+    // Refresh log setelah klik agar grafiknya langsung responsif update warna
+    fetchHabits()
   }
 
   function openReminderSettings(habit: Habit) {
@@ -195,12 +192,14 @@ export default function HabitsPage() {
     setNewGoalId("")
     setShowAdd(false)
     setAdding(false)
+    fetchHabits()
   }
 
   async function deleteHabit(id: string) {
     if (!confirm("Hapus habit ini?")) return
     await supabase.from("habits").delete().eq("id", id)
     setHabits(prev => prev.filter(h => h.id !== id))
+    fetchHabits()
   }
 
   if (loading) {
@@ -259,7 +258,11 @@ export default function HabitsPage() {
         <>
           <div className="card">
             <p className="section-title">AKTIVITAS 11 MINGGU</p>
-            <ContributionGraph completedDates={allCompletedDates} weeks={11} />
+            <ContributionGraph 
+              completedDates={allCompletedDates} 
+              totalHabits={habits.length} 
+              weeks={11} 
+            />
           </div>
 
           <div className="card" style={{ padding: "1rem" }}>

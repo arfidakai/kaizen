@@ -1,6 +1,5 @@
 "use client"
-
-import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, Cell } from "recharts"
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts"
 import { useTheme } from "@/context/ThemeContext"
 
 interface DayData {
@@ -25,6 +24,8 @@ export default function MiniBarChart({ data }: MiniBarChartProps) {
             tickLine={false}
             tick={{ fill: "#555", fontSize: 10, fontFamily: "'Space Mono', monospace" }}
           />
+           <YAxis type="number" domain={[0, 'dataMax + 1']} hide={true} />
+
           <Tooltip
             cursor={{ fill: "rgba(255,255,255,0.03)" }}
             content={({ active, payload }) => {
@@ -39,7 +40,7 @@ export default function MiniBarChart({ data }: MiniBarChartProps) {
                     fontFamily: "'Space Mono', monospace",
                     color: theme.accent,
                   }}>
-                    {payload[0].value}%
+                    {payload[0].value} Habit
                   </div>
                 )
               }
@@ -50,11 +51,7 @@ export default function MiniBarChart({ data }: MiniBarChartProps) {
             {data.map((entry, i) => (
               <Cell
                 key={i}
-                fill={
-                  entry.rate >= 80 ? theme.accent :
-                  entry.rate >= 50 ? theme.accentMid :
-                  entry.rate > 0  ? theme.text : "var(--border-color)"
-                }
+                fill={entry.rate > 0 ? theme.accent : "var(--border-color, #2e2e2e)"}
               />
             ))}
           </Bar>
