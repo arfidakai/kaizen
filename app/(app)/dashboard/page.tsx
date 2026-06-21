@@ -6,7 +6,7 @@ import { getGreeting, todayISO, formatDate, pct, getDailyPrompt } from "@/lib/ut
 import { format, subDays } from "date-fns"
 import { id } from "date-fns/locale"
 import MiniBarChart from "@/components/MiniBarChart"
-import { Flame, CheckCircle2, Target, BookOpen, Plus, Loader2, Sparkles, Snowflake, ChevronRight, Calendar } from "lucide-react"
+import { Flame, CheckCircle2, Target, BookOpen, Plus, Loader2, Sparkles, Snowflake, ChevronRight } from "lucide-react"
 import Link from "next/link"
 
 interface Habit {
@@ -114,15 +114,19 @@ export default function DashboardPage() {
 
     setHabits(allHabits.map(h => ({ ...h, icon: h.icon || "✅", completed: completedIds.has(h.id) })))
     setTodayRate(pct(completedIds.size, allHabits.length))
-
-    const allLogs = weekLogsRes.data || []
+ const allLogs = weekLogsRes.data || []
     const days: WeekData[] = []
+    
     for (let i = 6; i >= 0; i--) {
       const d = format(subDays(new Date(), i), "yyyy-MM-dd")
       const dayLabel = format(subDays(new Date(), i), "EEE", { locale: id }).substring(0, 3)
+      
+      // Hitung ada berapa banyak log habit unik yang selesai di hari tersebut
       const dayLogs = allLogs.filter(l => l.date === d && l.completed)
-      const rate = allHabits.length ? pct(dayLogs.length, allHabits.length) : 0
-      days.push({ day: dayLabel, rate })
+      const uniqueDayLogsCount = new Set(dayLogs.map(l => l.habit_id)).size
+      
+      // Ganti 'rate' yang tadinya persen menjadi jumlah mentah habit yang selesai
+      days.push({ day: dayLabel, rate: uniqueDayLogsCount })
     }
     setWeekData(days)
 
@@ -170,6 +174,9 @@ export default function DashboardPage() {
     } else {
       await supabase.from("habit_logs").delete().eq("habit_id", habit.id).eq("date", today)
     }
+
+    // Trigger re-fetch otomatis setelah pengerjaan agar data chart 7 hari ikut update tingginya secara presisi
+    fetchAll()
 
     const completedCount = optimistic.filter(h => h.completed).length
     if (completedCount === optimistic.length && optimistic.length > 0) {
@@ -434,7 +441,7 @@ function StatCard({ icon, label, value, highlight = false, sub }: {
         {label}
       </span>
       {sub && (
-        <span style={{ fontSize: "0.6rem", color: "#60a5fa", fontFamily: "'Space Mono', monospace" }}>
+        <span style={{ fontSize: "0.6", color: "#60a5fa", fontFamily: "'Space Mono', monospace" }}>
           {sub}
         </span>
       )}
