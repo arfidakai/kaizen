@@ -17,26 +17,26 @@ export default function LoginPage() {
   const [password, setPassword] = useState("")
   const [showPw, setShowPw] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [googleLoading, setGoogleLoading] = useState(false) 
+  // const [googleLoading, setGoogleLoading] = useState(false) // State loading khusus Google
   const [error, setError] = useState("")
 
   // Fungsi Login / Register pakai Google
-  async function handleGoogleLogin() {
-    setError("")
-    setGoogleLoading(true)
+  // async function handleGoogleLogin() {
+  //   setError("")
+  //   setGoogleLoading(true)
     
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}/dashboard`,
-      },
-    })
+  //   const { error } = await supabase.auth.signInWithOAuth({
+  //     provider: "google",
+  //     options: {
+  //       redirectTo: `${window.location.origin}/dashboard`,
+  //     },
+  //   })
 
-    if (error) {
-      setError(error.message)
-      setGoogleLoading(false)
-    }
-  }
+  //   if (error) {
+  //     setError(error.message)
+  //     setGoogleLoading(false)
+  //   }
+  // }
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
@@ -119,19 +119,20 @@ export default function LoginPage() {
           </div>
         )}
 
-        <button type="submit" className="btn-primary" disabled={loading || googleLoading} style={{ marginTop: "0.5rem" }}>
+        
+        <button type="submit" className="btn-primary" disabled={loading} style={{ marginTop: "0.5rem" }}>
           {loading ? <Loader2 size={18} className="animate-spin" style={{ marginRight: "0.5rem" }} /> : null}
           {loading ? "Masuk..." : "Masuk"}
         </button>
 
         {/* --- PEMBATAS VISUAL DAN TOMBOL GOOGLE OAUTH --- */}
-        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", margin: "0.5rem 0" }}>
+        {/* <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", margin: "0.5rem 0" }}>
           <div style={{ flex: 1, height: "1px", background: "#2e2e2e" }} />
           <span style={{ fontSize: "0.75rem", color: "#666", fontFamily: "'Space Mono', monospace" }}>ATAU</span>
           <div style={{ flex: 1, height: "1px", background: "#2e2e2e" }} />
-        </div>
+        </div> */}
 
-        <button
+        {/* <button
           type="button"
           onClick={handleGoogleLogin}
           disabled={loading || googleLoading}
@@ -174,7 +175,7 @@ export default function LoginPage() {
             </svg>
           )}
           {googleLoading ? "Menghubungkan..." : "Lanjutkan dengan Google"}
-        </button>
+        </button> */}
       </form>
 
       <p style={{ textAlign: "center", marginTop: "1.5rem", color: "#888", fontSize: "0.875rem" }}>

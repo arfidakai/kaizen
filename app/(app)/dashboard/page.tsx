@@ -218,7 +218,7 @@ export default function DashboardPage() {
           </p>
           <h1 style={{ fontSize: "1.5rem", fontWeight: 700, marginTop: "0.2rem", lineHeight: 1.2 }}>
             {getGreeting()},<br />
-            <span className="text-gradient">{username || "Kamu"} 👋</span>
+            <span className="text-gradient" style={{ color: "var(--accent)" }}>{username || "Kamu"} 👋</span>
           </h1>
         </div>
 
@@ -427,21 +427,43 @@ function StatCard({ icon, label, value, highlight = false, sub }: {
   sub?: string
 }) {
   return (
-    <div className={highlight ? "card glow-accent" : "card"} style={{
-      display: "flex", flexDirection: "column", alignItems: "center",
-      gap: "0.3rem", padding: "0.75rem 0.5rem",
-      borderColor: highlight ? "var(--accent-border)" : "#2e2e2e",
-      background: highlight ? "var(--accent-dim)" : "#1c1c1c",
-    }}>
+    <div 
+      className="card" 
+      style={{
+        display: "flex", 
+        flexDirection: "column", 
+        alignItems: "center",
+        gap: "0.3rem", 
+        padding: "0.75rem 0.5rem",
+        // Menyeragamkan border: card highlight pakai aksen ungu tebal, yang lain pakai soft border bawaan tema cerah
+        borderColor: highlight ? "var(--accent-border)" : "var(--accent-border-soft, var(--border-color))",
+        // Menyeragamkan background: semuanya menggunakan variasi warna soft transparan bawaan aksen tema Kaizen
+        background: "var(--accent-soft, rgba(144, 97, 222, 0.08))",
+        boxShadow: highlight ? "var(--accent-glow)" : "none",
+        transition: "all 0.2s ease"
+      }}
+    >
       {icon}
-      <span style={{ fontSize: "1.25rem", fontWeight: 700, fontFamily: "'Space Mono', monospace", color: highlight ? "var(--accent)" : "#f5f5f5" }}>
+      <span style={{ 
+        fontSize: "1.25rem", 
+        fontWeight: 700, 
+        fontFamily: "'Space Mono', monospace", 
+        // Mengunci warna teks utama agar selalu kontras (misal: ungu gelap di mode cerah, ungu terang di mode gelap)
+        color: "var(--accent)" 
+      }}>
         {value}
       </span>
-      <span style={{ fontSize: "0.65rem", color: "#666", fontFamily: "'Space Mono', monospace", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+      <span style={{ 
+        fontSize: "0.65rem", 
+        color: "var(--text-secondary, #666)", 
+        fontFamily: "'Space Mono', monospace", 
+        textTransform: "uppercase", 
+        letterSpacing: "0.05em" 
+      }}>
         {label}
       </span>
       {sub && (
-        <span style={{ fontSize: "0.6", color: "#60a5fa", fontFamily: "'Space Mono', monospace" }}>
+        <span style={{ fontSize: "0.6rem", color: "#3b82f6", fontFamily: "'Space Mono', monospace" }}>
           {sub}
         </span>
       )}
