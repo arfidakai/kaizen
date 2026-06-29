@@ -6,7 +6,7 @@ import { id } from "date-fns/locale"
 
 interface ContributionGraphProps {
   completedDates: string[] 
-  totalHabits: number      // ← Memastikan properti ini terdaftar di TypeScript
+  totalHabits: number      
   weeks?: number
 }
 

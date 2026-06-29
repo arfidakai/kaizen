@@ -82,7 +82,6 @@ export default function HabitsPage() {
     const goalLookup = new Map(allGoals.map(goal => [goal.id, goal.title]))
     const todayLogs = new Set(allLogs.filter(l => l.date === today).map(l => l.habit_id))
 
-    // FIX LOGIKA GRAFIK: Kirim daftar seluruh string tanggal log mentah agar intensitas rasionya terbaca otomatis
     const customLogs = allLogs.map(log => log.date)
     setAllCompletedDates(customLogs)
 
